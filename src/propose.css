@@ -1,0 +1,464 @@
+/* Propose Day — Written in the Stars (8 Feb). Deep-sky theme, gold accents.
+   Reuses the sky-world layout classes from App.css; this file only adds the
+   Propose-only pieces (moon drag, swipe cards, constellation drawing, photo
+   stars, sky votes, the big question) and overrides that keep every draggable
+   element free of CSS transform transitions (GSAP owns those transforms). */
+
+.propose-world {
+  --sky-deep: #1b1040;
+  --sky-soft: #2c1b56;
+  --star-gold: #ffd97a;
+  --moon-white: #f4ecff;
+  --propose-purple: #6e43bb;
+}
+
+/* Conflict C — contrast: the shared .sky-instruction p is too faint on the
+   deep sky, so Propose lifts it. */
+.propose-world .sky-instruction p {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.propose-world :focus-visible {
+  outline: 2px solid var(--star-gold);
+  outline-offset: 3px;
+}
+
+.propose-world .proposal-card :focus-visible {
+  outline-color: var(--propose-purple);
+}
+
+/* --- Ambient shooting star (CSS only, behind the content) --- */
+.shooting-star {
+  position: absolute;
+  top: 14%;
+  left: -140px;
+  width: 120px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(255, 217, 122, 0), var(--star-gold));
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+  animation: proposeShoot 9s linear infinite;
+}
+
+@keyframes proposeShoot {
+  0% { transform: translate(0, 0); opacity: 0; }
+  5% { opacity: 1; }
+  14% { transform: translate(110vw, 22vh); opacity: 0; }
+  100% { transform: translate(110vw, 22vh); opacity: 0; }
+}
+
+/* --- Stage 1 — Raise the Moon --- */
+.propose-moon-stage {
+  min-height: 100vh;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 95px max(6vw, 28px) 45px;
+  overflow: hidden;
+}
+
+.moon-sky {
+  position: relative;
+  height: 380px;
+  width: min(560px, 92vw);
+  margin: 10px auto 0;
+}
+
+.moon-sky i {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #fff;
+  opacity: 0.25;
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.4);
+  transition: opacity 0.4s, box-shadow 0.4s, background 0.4s;
+}
+
+.moon-sky i.lit {
+  opacity: 1;
+  background: var(--star-gold);
+  box-shadow: 0 0 14px 3px var(--star-gold);
+}
+
+.moon-drag {
+  position: absolute;
+  left: calc(50% - 55px);
+  bottom: 14px;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #f4ecff, #c9aef5 45%, #7a5fc0 78%);
+  box-shadow: 0 0 60px rgba(200, 170, 255, 0.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  touch-action: none;
+  will-change: transform;
+  color: var(--sky-soft);
+}
+
+.moon-drag:active {
+  cursor: grabbing;
+}
+
+.moon-drag span {
+  font-size: 44px;
+  line-height: 1;
+}
+
+.moon-drag b {
+  font: italic 13px var(--serif);
+  margin-top: 4px;
+}
+
+.moon-hint {
+  color: rgba(255, 255, 255, 0.85);
+  font: italic 13px var(--serif);
+  margin: 14px 0;
+}
+
+.propose-moon-stage .world-button {
+  margin-top: 12px;
+}
+
+/* --- Stage 2 — Cosmic Background Check (swipe cards) --- */
+.propose-world .checkpoint-card {
+  cursor: grab;
+  touch-action: pan-y;
+}
+
+.propose-world .checkpoint-card .stage-hint {
+  color: rgba(255, 255, 255, 0.65);
+  font: italic 12px var(--serif);
+  margin-top: 14px;
+}
+
+/* --- Stage 3 — Draw the Constellation --- */
+/* The shared .constellation-lines is anchored to a 70% band for the other
+   days; Propose draws across the whole stage so the SVG viewBox and the
+   button positions share one coordinate space. */
+.propose-world .constellation-lines {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.propose-world .constellation-lines .drawn-line {
+  stroke: var(--star-gold);
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  filter: drop-shadow(0 0 4px rgba(255, 217, 122, 0.8));
+}
+
+/* Keep the star growth in GSAP's hands (no CSS transform transition on the
+   button, or it would fight the connect pop). */
+.propose-world .big-star {
+  transition: color 0.35s, text-shadow 0.35s;
+}
+
+.propose-world .big-star.lit {
+  color: var(--star-gold);
+  text-shadow: 0 0 10px var(--star-gold), 0 0 40px #a985ff;
+}
+
+.propose-world .constellation-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 78px;
+  transform: translateX(-50%);
+  z-index: 4;
+  color: rgba(255, 255, 255, 0.78);
+  font: italic 12px var(--serif);
+  white-space: nowrap;
+}
+
+/* --- Stage 4 — Pop the Nerves --- */
+/* No transform transition on the orbit buttons: GSAP owns their transforms
+   while they are flung. Opacity still fades for the pop. */
+.propose-world .nervous-orbit > button {
+  transition: opacity 0.45s ease, color 0.45s ease, border-color 0.45s ease, background 0.45s ease;
+  touch-action: none;
+  cursor: grab;
+}
+
+.propose-world .nerves-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 84px;
+  transform: translateX(-50%);
+  z-index: 4;
+  color: rgba(255, 255, 255, 0.78);
+  font: italic 12px var(--serif);
+  white-space: nowrap;
+}
+
+/* --- Stage 5 — Photo Stars --- */
+.propose-world .photo-stage-copy h2 {
+  color: #fff;
+}
+
+.propose-world .photo-stage-copy p {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.photo-stars-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin: 18px auto 0;
+  max-width: 560px;
+}
+
+.photo-star {
+  width: 128px;
+  padding: 8px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  transform: rotate(var(--tilt));
+  text-align: center;
+  position: relative;
+  cursor: pointer;
+  transition: box-shadow 0.2s;
+}
+
+.photo-star img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 2px;
+  display: block;
+}
+
+.photo-star > span {
+  display: block;
+  margin-top: 7px;
+  font: italic 11px var(--serif);
+  color: var(--sky-soft);
+}
+
+.photo-star:hover {
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.45), 0 0 0 2px var(--star-gold);
+}
+
+.photo-star.viewed {
+  outline: 2px solid var(--star-gold);
+  outline-offset: 2px;
+}
+
+.propose-world .enlarge-badge {
+  background: rgba(44, 27, 86, 0.9);
+}
+
+.propose-world .propose-photo-empty {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.empty-stars {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+.empty-stars i {
+  font-style: normal;
+  font-size: 34px;
+  color: var(--star-gold);
+  text-shadow: 0 0 12px rgba(255, 217, 122, 0.7);
+  animation: proposeTwinkle 2s ease-in-out infinite alternate;
+}
+
+.empty-stars i:nth-child(2) {
+  animation-delay: 0.5s;
+}
+
+.empty-stars i:nth-child(3) {
+  animation-delay: 1s;
+}
+
+@keyframes proposeTwinkle {
+  from { opacity: 0.4; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1.1); }
+}
+
+/* --- Stage 6 — The Sky Votes --- */
+.sky-votes-stage {
+  text-align: center;
+}
+
+.sky-votes-copy h2 {
+  color: #fff;
+}
+
+.sky-votes-copy p {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.verdict-field {
+  position: relative;
+  height: 260px;
+  max-width: 560px;
+  margin: 10px auto 0;
+}
+
+.verdict-star {
+  position: absolute;
+  width: 64px;
+  height: 64px;
+  transform: translate(-50%, -50%);
+  color: #8d77c5;
+  background: none;
+  font-size: 34px;
+  text-shadow: 0 0 15px currentColor;
+  cursor: grab;
+  touch-action: none;
+  will-change: transform;
+  transition: color 0.3s, text-shadow 0.3s;
+}
+
+.verdict-star:active {
+  cursor: grabbing;
+}
+
+.verdict-star.aligned {
+  color: var(--star-gold);
+  text-shadow: 0 0 10px var(--star-gold), 0 0 40px #a985ff;
+  cursor: default;
+}
+
+.verdict-slots {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin: 6px 0 4px;
+}
+
+.verdict-slot {
+  width: 72px;
+  height: 72px;
+  border: 1.5px dashed rgba(255, 255, 255, 0.35);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.verdict-slot.filled {
+  border-style: solid;
+  border-color: var(--star-gold);
+  color: var(--star-gold);
+  box-shadow: 0 0 24px rgba(255, 217, 122, 0.35);
+}
+
+.verdict-lines {
+  min-height: 84px;
+  margin-top: 10px;
+}
+
+.verdict-lines p {
+  color: var(--star-gold);
+  font: italic 16px var(--serif);
+  margin: 4px 0;
+}
+
+.verdict-unanimous {
+  color: #fff;
+  font: 400 20px var(--serif);
+  margin: 12px 0;
+}
+
+/* --- Stage 7 — The Big Question --- */
+/* The No button is moved with GSAP quickTo; no CSS transform transition or
+   it would lag every frame. */
+.propose-world .no-button {
+  transition: background 0.16s, color 0.16s;
+}
+
+.propose-world .yes-button {
+  will-change: transform;
+}
+
+.no-tease {
+  margin-top: 14px;
+  color: #805eb0;
+  font: italic 13px var(--serif);
+}
+
+.shooting-streak {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.shooting-streak path {
+  stroke: var(--star-gold);
+  stroke-width: 1.5;
+  fill: none;
+  filter: drop-shadow(0 0 8px var(--star-gold));
+}
+
+@media (max-width: 720px) {
+  .moon-sky {
+    height: 300px;
+  }
+
+  .moon-drag {
+    width: 90px;
+    height: 90px;
+    left: calc(50% - 45px);
+  }
+
+  .moon-drag span {
+    font-size: 36px;
+  }
+
+  .propose-world .constellation-hint,
+  .propose-world .nerves-hint {
+    white-space: normal;
+    width: 86vw;
+    text-align: center;
+  }
+
+  .verdict-field {
+    height: 220px;
+  }
+
+  .verdict-star {
+    width: 50px;
+    height: 50px;
+    font-size: 28px;
+  }
+
+  .photo-star {
+    width: 110px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shooting-star {
+    animation: none;
+  }
+
+  .empty-stars i {
+    animation: none;
+  }
+
+  .moon-drag {
+    cursor: pointer;
+  }
+}

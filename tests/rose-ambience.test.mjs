@@ -1,8 +1,10 @@
 /**
- * Rose ambience tests — src/lib/roseAmbience.ts (H1: real Web Audio, not a
- * fake CSS toggle). The AudioContext is mocked: the implementation reads the
- * constructor lazily from globalThis, so the mock is installed before the
- * module is imported, and removed again for the no-audio tests.
+ * Rose ambience tests — src/lib/ambience.ts, nightGarden profile (H1: real
+ * Web Audio, not a fake CSS toggle). The AudioContext is mocked: the
+ * implementation reads the constructor lazily from globalThis, so the mock
+ * is installed before the module is imported, and removed again for the
+ * no-audio tests. This file is also the regression guard for the
+ * roseAmbience → ambience rename: Rose's loop must sound identical.
  *
  * Note: this tests the loop/mute/one-shot wiring. Whether the night-garden
  * loop actually sounds pleasant still needs a human ear — no test can hear.
@@ -73,10 +75,10 @@ class MockAudioContext {
 }
 
 globalThis.AudioContext = MockAudioContext
-const { createAmbience, roseAmbience } = await import('../src/lib/roseAmbience.ts')
+const { createAmbience, ambience } = await import('../src/lib/ambience.ts')
 
 test('start builds the loop once and reports playing; stop suspends it', () => {
-  const ambience = createAmbience()
+  const ambience = createAmbience('nightGarden')
   try {
     assert.equal(ambience.isPlaying(), false)
     assert.equal(ambience.start(), true)
@@ -97,7 +99,7 @@ test('start builds the loop once and reports playing; stop suspends it', () => {
 })
 
 test('toggle flips the loop and returns the new state', () => {
-  const ambience = createAmbience()
+  const ambience = createAmbience('nightGarden')
   try {
     assert.equal(ambience.toggle(), true)
     assert.equal(ambience.isPlaying(), true)
@@ -109,7 +111,7 @@ test('toggle flips the loop and returns the new state', () => {
 })
 
 test('setMuted suspends while playing and resumes on unmute', () => {
-  const ambience = createAmbience()
+  const ambience = createAmbience('nightGarden')
   try {
     ambience.start()
     const ctx = createdContexts[createdContexts.length - 1]
@@ -128,7 +130,7 @@ test('setMuted suspends while playing and resumes on unmute', () => {
 })
 
 test('one-shots work even when the loop is off', () => {
-  const ambience = createAmbience()
+  const ambience = createAmbience('nightGarden')
   assert.equal(ambience.isPlaying(), false)
   assert.doesNotThrow(() => ambience.playSnip(), 'thorn snip needs no loop')
   assert.doesNotThrow(() => ambience.playChime(), 'delivery chime needs no loop')
@@ -139,7 +141,7 @@ test('one-shots work even when the loop is off', () => {
 test('without any AudioContext every method is a safe no-op (H1)', async () => {
   delete globalThis.AudioContext
   try {
-    const silent = createAmbience()
+    const silent = createAmbience('nightGarden')
     assert.equal(silent.start(), false, 'no audio available')
     assert.equal(silent.isPlaying(), false)
     assert.equal(silent.toggle(), false)
@@ -149,8 +151,8 @@ test('without any AudioContext every method is a safe no-op (H1)', async () => {
     assert.doesNotThrow(() => silent.playChime())
 
     // The app singleton behaves the same way without audio.
-    assert.equal(roseAmbience.start(), false)
-    assert.equal(roseAmbience.isPlaying(), false)
+    assert.equal(ambience.start(), false)
+    assert.equal(ambience.isPlaying(), false)
   } finally {
     globalThis.AudioContext = MockAudioContext
   }
