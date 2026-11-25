@@ -24,7 +24,7 @@ export interface AmbienceHandle {
   setMuted(muted: boolean): void
   isMuted(): boolean
   isPlaying(): boolean
-  /** Short snip (thorn removal). No-op without audio. */
+  /** Short snip. No-op without audio. (Kept for tests; no stage uses it.) */
   playSnip(): void
   /** Soft chime (delivery complete). No-op without audio. */
   playChime(): void

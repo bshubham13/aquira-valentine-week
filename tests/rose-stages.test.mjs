@@ -36,10 +36,11 @@ test('stage 1 opens only when the gate is open', () => {
   assert.equal(canAdvanceRose(1, { ...state, gateOpen: true }), true)
 })
 
-test('stage 2 needs all 4 thorns removed', () => {
+test('stage 2 needs the rose watered to 100%', () => {
   const state = emptyRoseState(0)
-  assert.equal(canAdvanceRose(2, { ...state, thornsRemoved: 3 }), false)
-  assert.equal(canAdvanceRose(2, { ...state, thornsRemoved: 4 }), true)
+  assert.equal(canAdvanceRose(2, { ...state, watered: 0 }), false)
+  assert.equal(canAdvanceRose(2, { ...state, watered: 99 }), false)
+  assert.equal(canAdvanceRose(2, { ...state, watered: 100 }), true)
 })
 
 test('stage 3 needs 5 of 7 roses bloomed', () => {

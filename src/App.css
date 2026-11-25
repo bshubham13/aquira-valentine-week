@@ -178,8 +178,6 @@
 @keyframes roseBreathe { to { transform: translateX(-50%) rotate(-4deg) scale(1.035); } }
 .rose-stem-3d { width: 9px; height: 305px; position: absolute; left: 50%; top: 218px; border-radius: 10px; transform: translateX(-50%) rotate(2deg); background: linear-gradient(90deg,#193d28,#5d9b62,#183722); box-shadow: 9px 0 18px rgba(0,0,0,.2); }
 .rose-stem-3d::before,.rose-stem-3d::after { content:""; width:85px;height:38px;position:absolute;border-radius:100% 0;background:linear-gradient(145deg,#3c804c,#163b27)}.rose-stem-3d::before{left:4px;top:37%;transform:rotate(-8deg)}.rose-stem-3d::after{right:4px;top:61%;transform:scaleX(-1) rotate(-8deg)}
-.rose-stem-3d button { position: absolute; left: 50%; top: var(--thorn-y); padding: 8px; color: #99c391; background: none; transform: translateX(calc(-50% + calc(var(--thorn-side) * 17px))) scaleX(var(--thorn-side)) rotate(45deg); transition: .35s; }
-.rose-stem-3d button.removed { opacity: 0; transform: translateX(calc(-50% + calc(var(--thorn-side) * 70px))) scale(.2) rotate(180deg); }
 .rose-tag { position: absolute; right: 0; bottom: 34px; padding: 12px 18px; color: #6f233b; background: #f8d9d8; transform: rotate(5deg); box-shadow: 7px 8px 0 #8b1e3e; font: italic 11px/1.4 var(--serif); text-align: center; }
 .rose-tag strong { font-size: 8px; letter-spacing: 1px; text-transform: uppercase; }
 .bouquet-studio { color: #3f1020; background: linear-gradient(110deg,#f5cbd0,#fff3ec); }

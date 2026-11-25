@@ -6,7 +6,8 @@
 
 export interface RoseStageState {
   gateOpen: boolean
-  thornsRemoved: number
+  /** Stage 2 "Water the Rose": 0–100% watered. */
+  watered: number
   rosesBloomed: number
   momentsTucked: number
   ribbonTied: boolean
@@ -20,7 +21,7 @@ export const ROSE_FINALE_STAGE = 8
 
 export const ROSE_STAGE_REQUIREMENTS: Record<number, string> = {
   1: 'gateOpen',
-  2: 'thornsRemoved >= 4',
+  2: 'watered >= 100',
   3: 'rosesBloomed >= 5',
   4: 'momentsTucked >= 3',
   5: 'ribbonTied',
@@ -34,7 +35,7 @@ export function canAdvanceRose(stage: number, state: RoseStageState): boolean {
     case 1:
       return state.gateOpen
     case 2:
-      return state.thornsRemoved >= 4
+      return state.watered >= 100
     case 3:
       return state.rosesBloomed >= 5
     case 4:
@@ -57,7 +58,7 @@ export function nextRoseStage(stage: number): number {
 export function emptyRoseState(photoCount: number): RoseStageState {
   return {
     gateOpen: false,
-    thornsRemoved: 0,
+    watered: 0,
     rosesBloomed: 0,
     momentsTucked: 0,
     ribbonTied: false,

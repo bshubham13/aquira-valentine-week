@@ -128,12 +128,40 @@
   margin-top: 10px;
 }
 
-/* ---------- Stage 2: Shy Thorn ---------- */
-.rose-stem-3d button {
-  touch-action: none;
+/* ---------- Stage 2: Water the Rose ---------- */
+/* The stem droops while Rosie is thirsty and stands tall as she is
+   watered; the bloom dulls and brightens with her. Both are driven by
+   the --droop / --bloom-life custom properties set on the stage. */
+.water-stage .rose-stem-3d {
+  transform: translateX(-50%) rotate(calc(2deg + var(--droop, 0deg)));
+  transition: transform 0.3s ease;
 }
-.rose-stem-3d button.removed {
+.water-stage .rose-bloom-3d {
+  opacity: var(--bloom-life, 1);
+  filter: saturate(var(--bloom-life, 1));
+  transition: opacity 0.3s ease;
+}
+.water-drops {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
   pointer-events: none;
+  z-index: 4;
+}
+.water-drops i {
+  position: absolute;
+  top: -8%;
+  font-size: 18px;
+  font-style: normal;
+  animation: dropFall 0.9s linear infinite;
+}
+.water-drops i:nth-child(1) { left: 30%; animation-delay: 0s; }
+.water-drops i:nth-child(2) { left: 46%; animation-delay: 0.25s; }
+.water-drops i:nth-child(3) { left: 58%; animation-delay: 0.5s; }
+.water-drops i:nth-child(4) { left: 38%; animation-delay: 0.7s; }
+.water-drops i:nth-child(5) { left: 52%; animation-delay: 0.15s; }
+@keyframes dropFall {
+  to { transform: translateY(560px); }
 }
 
 /* ---------- Stage 3: Moonbeam ---------- */
