@@ -7,7 +7,7 @@ Eight independent, personalized Valentine Week experiences built as one romantic
 - Creator flows tailored to Rose, Propose, Chocolate, Teddy, Promise, Hug, Kiss, and Valentine's Day
 - Self-contained share links; personalized data stays encoded in the URL
 - A direct recipient doorway with no creator UI or account requirement
-- Distinct multi-stage interactions and finales for all eight days
+- Five-part, mechanically distinct recipient journeys and finales for all eight days
 - Responsive layouts, motion, reduced-motion support, and keyboard focus states
 
 ## Run locally
