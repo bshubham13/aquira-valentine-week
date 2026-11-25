@@ -1,0 +1,935 @@
+/* Chocolate Day — The Sweet Heist (9 Feb). Warm kitchen at night.
+   Reuses the chocolate-world layout classes from App.css; this file only
+   adds the Chocolate-only pieces (shutter, dial + stir ring, MorphSVG melt,
+   pour, toppings, truffles, peel, bite, kitchen cat) and the shared
+   photo-dialog / finale-fan rules Chocolate needs to work standalone
+   (those live in rose.css for Rose — Chocolate must not depend on it).
+   Contrast: caramel #e9954f is a fill/accent only, never a text colour on
+   cream; text sits on cocoa #3b1f14 or cream #fff6ec. */
+
+.chocolate-world {
+  --cocoa-deep: #3b1f14;
+  --gold-foil: #f2c14e;
+  --cream: #fff6ec;
+  --berry: #a8324e;
+  --caramel: #e9954f;
+}
+
+.chocolate-world :focus-visible {
+  outline: 2px solid var(--gold-foil);
+  outline-offset: 3px;
+}
+
+.chocolate-world .finale :focus-visible,
+.chocolate-world .rose-photo-dialog :focus-visible {
+  outline-color: var(--cocoa-deep);
+}
+
+.chocolate-world .choco-hint,
+.chocolate-world .stage-hint {
+  margin: 14px 0 0;
+  color: rgba(255, 246, 236, 0.72);
+  font: italic 12px/1.6 var(--serif);
+}
+
+/* --- Stage 1 — Lift the Shutter --- */
+.shutter-shop {
+  width: min(420px, 86vw);
+  height: 230px;
+  position: relative;
+  margin: 8px 0 4px;
+  overflow: hidden;
+  border: 10px solid #734020;
+  border-radius: 10px;
+  background: #1d0c05;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.4);
+}
+
+.shutter-light {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 30%, #ffd9a0, #e9954f 45%, #7a3f1e 100%);
+}
+
+.shutter-panel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: repeating-linear-gradient(#8a5a35 0 26px, #6e4426 26px 32px);
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.45);
+  touch-action: none;
+}
+
+.shutter-panel i {
+  flex: 1;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.25);
+}
+
+.shutter-panel span {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  color: #fff6ec;
+  border-radius: 20px;
+  background: rgba(29, 12, 5, 0.65);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.shutter-hint {
+  min-height: 22px;
+  color: rgba(255, 246, 236, 0.85);
+  font: italic 13px var(--serif);
+}
+
+/* --- Stage 2 — Temper the Drama --- */
+.temper-visual {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  touch-action: none;
+}
+
+.temper-visual .chocolate-cauldron {
+  position: relative;
+  z-index: 2;
+}
+
+.stir-ring {
+  width: 430px;
+  height: 430px;
+  max-width: 92vw;
+  position: absolute;
+  top: -18px;
+  left: 50%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.stir-track {
+  fill: none;
+  stroke: rgba(255, 246, 236, 0.16);
+  stroke-width: 2;
+  stroke-dasharray: 3 7;
+}
+
+.stir-progress {
+  fill: none;
+  stroke: var(--gold-foil);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.melt-svg {
+  width: min(300px, 80vw);
+  height: 90px;
+  position: relative;
+  z-index: 2;
+  margin-top: -8px;
+}
+
+.melt-bubbles {
+  position: absolute;
+  bottom: 118px;
+  left: 50%;
+  display: flex;
+  gap: 14px;
+  transform: translateX(-50%);
+  color: #ffd9a0;
+  font-size: 18px;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.melt-bubbles i {
+  display: block;
+  font-style: normal;
+  animation: meltBubble 1.6s ease-in-out infinite;
+}
+
+.melt-bubbles i:nth-child(2) { animation-delay: 0.5s; }
+.melt-bubbles i:nth-child(3) { animation-delay: 1s; }
+
+@keyframes meltBubble {
+  0% { transform: translateY(8px) scale(0.6); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: translateY(-26px) scale(1.1); opacity: 0; }
+}
+
+.stir-guide {
+  position: relative;
+  z-index: 2;
+  color: rgba(255, 246, 236, 0.75);
+  font: italic 12px var(--serif);
+}
+
+/* Original kitchen-cat cameo (CSS art, plan §5A — no downloaded GIFs). */
+.kitchen-cat {
+  position: absolute;
+  right: -6px;
+  bottom: 96px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: catBob 3.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.kitchen-cat.cat-small {
+  position: static;
+  margin: 18px auto 0;
+  animation: none;
+}
+
+@keyframes catBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+.kitchen-cat .cat-face {
+  width: 64px;
+  height: 52px;
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 8px;
+  border-radius: 50% 50% 46% 46%;
+  background: #f2c14e;
+  color: #3b1f14;
+  font-size: 15px;
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+}
+
+.kitchen-cat .cat-ear {
+  width: 0;
+  height: 0;
+  position: absolute;
+  top: -9px;
+  border-left: 11px solid transparent;
+  border-right: 11px solid transparent;
+  border-bottom: 16px solid #f2c14e;
+}
+
+.kitchen-cat .cat-ear.left { left: 6px; transform: rotate(-14deg); }
+.kitchen-cat .cat-ear.right { right: 6px; transform: rotate(14deg); }
+
+.kitchen-cat .cat-eye {
+  width: 7px;
+  height: 9px;
+  position: absolute;
+  top: 16px;
+  border-radius: 50%;
+  background: #3b1f14;
+  animation: catBlink 4s infinite;
+}
+
+.kitchen-cat .cat-eye.left { left: 16px; }
+.kitchen-cat .cat-eye.right { right: 16px; }
+
+@keyframes catBlink {
+  0%, 92%, 100% { transform: scaleY(1); }
+  95% { transform: scaleY(0.1); }
+}
+
+.kitchen-cat small {
+  margin-top: 6px;
+  color: rgba(255, 246, 236, 0.75);
+  font: italic 10px var(--serif);
+}
+
+.stove-dial-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.stove-dial-wrap > span {
+  color: rgba(255, 246, 236, 0.72);
+  font: italic 12px var(--serif);
+}
+
+.stove-dial {
+  width: 128px;
+  height: 128px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #8a5a35, #3b1f14 72%);
+  border: 6px solid #734020;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.4);
+  cursor: grab;
+  touch-action: none;
+}
+
+.stove-dial:active { cursor: grabbing; }
+
+.stove-dial i {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 4px;
+  height: 26px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: var(--gold-foil);
+  box-shadow: 0 0 12px rgba(242, 193, 78, 0.8);
+}
+
+.stove-dial b {
+  color: var(--cream);
+  font: 400 26px var(--serif);
+}
+
+/* Hold-to-stir / hold-to-bite button (Rose's wind-button, cocoa edition). */
+.choco-hold-button {
+  width: 100%;
+  min-height: 52px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  overflow: hidden;
+  color: var(--cream);
+  background: #4a2410;
+  border: 1px solid rgba(242, 193, 78, 0.35);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  touch-action: none;
+}
+
+.choco-hold-button > i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: rgba(233, 149, 79, 0.45);
+  transition: width 0.1s linear;
+}
+
+.choco-hold-button > *:not(i) {
+  position: relative;
+  z-index: 1;
+}
+
+.chocolate-world .wind-row {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+  margin-top: 16px;
+}
+
+.chocolate-world .wind-row .secondary-button {
+  white-space: nowrap;
+}
+
+/* --- Stage 3 — Pour the Mould --- */
+.pour-stage {
+  overflow: hidden;
+}
+
+.pour-visual {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 520px;
+}
+
+.pour-cauldron {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.pour-cauldron:active { cursor: grabbing; }
+
+.pour-pot {
+  width: 190px;
+  height: 120px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 12px 12px 60px 60px;
+  background: linear-gradient(#8a5a35, #3b1f14 78%);
+  border: 6px solid #734020;
+  box-shadow: 0 18px 35px rgba(0, 0, 0, 0.4);
+  font-size: 44px;
+}
+
+.pour-pot .pour-spout {
+  position: absolute;
+  right: -14px;
+  bottom: 26px;
+  width: 26px;
+  height: 14px;
+  border-radius: 0 10px 10px 0;
+  background: #734020;
+}
+
+.pour-cauldron small {
+  color: rgba(255, 246, 236, 0.72);
+  font: italic 11px var(--serif);
+}
+
+.pour-stream-svg {
+  width: 200px;
+  height: 150px;
+  position: absolute;
+  top: 132px;
+  right: 8%;
+  z-index: 2;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.pour-stream-svg path {
+  fill: none;
+  stroke: rgba(233, 149, 79, 0.55);
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-dasharray: 1 14;
+}
+
+.pour-drop {
+  width: 16px;
+  height: 16px;
+  position: absolute;
+  top: 132px;
+  right: 8%;
+  z-index: 2;
+  border-radius: 50%;
+  background: #e9954f;
+  box-shadow: 0 0 14px rgba(233, 149, 79, 0.9);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pour-controls > span,
+.pour-controls label,
+.bite-copy > span {
+  color: var(--cream);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.pour-controls h2,
+.bite-copy h2 {
+  margin: 10px 0 12px;
+  color: var(--cream);
+  font: 400 clamp(36px, 4.5vw, 58px)/1 var(--serif);
+  letter-spacing: -1.7px;
+}
+
+.pour-controls > p,
+.bite-copy p {
+  color: rgba(255, 246, 236, 0.72);
+  font: 13px/1.65 var(--serif);
+}
+
+.pour-controls label,
+.bite-copy label {
+  display: block;
+  margin: 24px 0 9px;
+}
+
+.pour-meter {
+  margin-top: 20px;
+}
+
+.pour-meter span {
+  color: rgba(255, 246, 236, 0.6);
+  font-size: 7px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+}
+
+.pour-meter b {
+  display: block;
+  margin: 7px 0;
+  color: var(--cream);
+  font: italic 14px var(--serif);
+}
+
+.pour-meter > i {
+  height: 4px;
+  display: block;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.pour-meter em {
+  height: 100%;
+  display: block;
+  background: var(--caramel);
+  transition: width 0.15s linear;
+}
+
+.pour-meter small {
+  display: block;
+  margin-top: 8px;
+  color: rgba(255, 246, 236, 0.72);
+  font: italic 11px var(--serif);
+}
+
+/* --- Mould (extends App.css .choco-mould) --- */
+.chocolate-world .choco-mould {
+  overflow: hidden;
+}
+
+.chocolate-world .choco-mould > .mould-fill {
+  width: 100%;
+  height: 0;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: block;
+  background: linear-gradient(rgba(122, 63, 30, 0.55), rgba(90, 44, 20, 0.85));
+  transition: height 0.15s linear;
+}
+
+.chocolate-world .choco-mould > .mould-glyphs {
+  position: relative;
+  z-index: 2;
+}
+
+.chocolate-world .choco-mould.drop-hot {
+  outline: 3px dashed var(--gold-foil);
+  outline-offset: 6px;
+}
+
+.chocolate-world .choco-mould .mould-for {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  color: var(--cream);
+  font: italic 13px var(--serif);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+}
+
+.mould-options button.selected {
+  outline: 2px solid var(--gold-foil);
+  outline-offset: 2px;
+}
+
+.placed-topping {
+  position: absolute;
+  z-index: 3;
+  font-size: 30px;
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.45));
+  animation: toppingPlop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.placed-topping:nth-child(3) { left: 26%; top: 30%; }
+.placed-topping:nth-child(4) { right: 26%; top: 52%; }
+
+@keyframes toppingPlop {
+  from { transform: scale(2.2); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.topping-tray {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.topping-tray button {
+  flex: 1;
+  min-height: 74px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 6px;
+  color: var(--cream);
+  border: 1px solid rgba(255, 246, 236, 0.25);
+  border-radius: 12px;
+  background: rgba(255, 246, 236, 0.07);
+  touch-action: none;
+}
+
+.topping-tray button i {
+  font-size: 26px;
+  font-style: normal;
+}
+
+.topping-tray button span {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.topping-tray button.selected {
+  border-color: var(--gold-foil);
+  background: rgba(242, 193, 78, 0.16);
+}
+
+.topping-tray button.placed {
+  opacity: 0.45;
+}
+
+/* --- Stage 5 — Photo Truffles --- */
+.photo-truffles-stage {
+  text-align: center;
+}
+
+.photo-stage-copy span {
+  color: var(--cream);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.photo-stage-copy h2 {
+  margin: 10px 0 8px;
+  color: var(--cream);
+  font: 400 clamp(34px, 4.5vw, 54px)/1 var(--serif);
+}
+
+.photo-stage-copy p {
+  max-width: 460px;
+  margin: 0 auto;
+  color: rgba(255, 246, 236, 0.72);
+  font: italic 13px/1.6 var(--serif);
+}
+
+.chocolate-world .photo-empty {
+  margin: 26px auto;
+  max-width: 420px;
+  color: var(--cream);
+}
+
+.choco-truffle-empty {
+  font-size: 64px;
+  filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.4));
+}
+
+.truffle-box {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin: 30px auto 10px;
+  max-width: 640px;
+}
+
+.choco-truffle {
+  width: 150px;
+  position: relative;
+  padding: 8px 8px 10px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #f2c14e, #c98f2e 60%, #8a5f14);
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.4);
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 0.25s;
+  text-align: center;
+}
+
+.choco-truffle:hover {
+  transform: rotate(0deg) translateY(-4px);
+}
+
+.choco-truffle img {
+  width: 100%;
+  height: 118px;
+  object-fit: cover;
+  border-radius: 6px;
+  display: block;
+  background: #3b1f14;
+}
+
+.choco-truffle > span:not(.enlarge-badge) {
+  display: block;
+  margin-top: 8px;
+  color: #3b1f14;
+  font: italic 11px/1.4 var(--serif);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.choco-truffle::after {
+  content: "🍫 foil — tap to unwrap";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(242, 193, 78, 0.96), rgba(180, 120, 40, 0.96));
+  color: #3b1f14;
+  font: 800 10px/1.5 sans-serif;
+  letter-spacing: 0.5px;
+  transition: opacity 0.3s;
+}
+
+.choco-truffle.viewed::after {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.choco-truffle.viewed {
+  outline: 2px solid var(--gold-foil);
+  outline-offset: 2px;
+}
+
+/* --- Stage 6 — Peel (extends App.css .chocolate-piece) --- */
+.chocolate-world .peel-tab {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  z-index: 3;
+  color: var(--gold-foil);
+  font-size: 22px;
+  font-style: normal;
+  cursor: grab;
+  touch-action: none;
+}
+
+.chocolate-world .peel-tab:active { cursor: grabbing; }
+
+/* --- Stage 7 — Bite the Golden Centre --- */
+.bite-stage {
+  text-align: center;
+}
+
+.bite-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+}
+
+.bite-shell {
+  width: min(280px, 72vw);
+  height: min(280px, 72vw);
+  position: relative;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 28%, #8a5a35, #3b1f14 72%);
+  border: 8px solid #734020;
+  box-shadow: inset 0 -20px 40px rgba(0, 0, 0, 0.45), 0 25px 50px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+}
+
+.bite-shell > b {
+  position: relative;
+  z-index: 2;
+  color: #f2c14e;
+  font-size: 64px;
+}
+
+.bite-gold {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 55%, rgba(242, 193, 78, 0.95), rgba(242, 193, 78, 0) 68%);
+  transition: opacity 0.2s;
+}
+
+.bite-crack {
+  position: absolute;
+  z-index: 3;
+  background: #1d0c05;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.bite-crack.crack-a {
+  left: 12%;
+  top: 0;
+  width: 5px;
+  height: 100%;
+  transform: rotate(18deg);
+}
+
+.bite-crack.crack-b {
+  left: 0;
+  top: 46%;
+  width: 100%;
+  height: 5px;
+  transform: rotate(-12deg);
+}
+
+.bite-shell.cracks-1 .crack-a { opacity: 1; }
+.bite-shell.cracks-2 .crack-a,
+.bite-shell.cracks-2 .crack-b { opacity: 1; }
+
+.bite-hold {
+  width: min(420px, 88vw);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.choco-ticket {
+  position: static;
+  width: min(420px, 88vw);
+  margin: 0;
+}
+
+/* --- Finale + photo dialog (scoped: Chocolate must work standalone,
+   without rose.css — these mirror rose.css's shared rules) --- */
+.chocolate-world .finale-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin: 22px 0 6px;
+}
+
+.chocolate-world .finale-photo-fan {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.chocolate-world .finale-fan-photo {
+  width: 84px;
+  margin: 0 -8px;
+  padding: 5px 5px 7px;
+  background: var(--cream);
+  border-radius: 4px;
+  box-shadow: 0 10px 22px rgba(59, 31, 20, 0.4);
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 0.25s;
+}
+
+.chocolate-world .finale-fan-photo:hover {
+  transform: rotate(0deg) translateY(-6px) scale(1.06);
+  z-index: 1;
+}
+
+.chocolate-world .finale-fan-photo img {
+  width: 100%;
+  height: 74px;
+  object-fit: cover;
+  border-radius: 2px;
+  display: block;
+  background: #f4d4b9;
+}
+
+.chocolate-world .enlarge-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(59, 31, 20, 0.85);
+  color: var(--cream);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.chocolate-world .photo-failed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 150px;
+  background: var(--cream);
+  color: var(--cocoa-deep);
+}
+
+.chocolate-world .photo-placeholder {
+  font-size: 30px;
+  color: var(--berry);
+}
+
+.chocolate-world .rose-photo-dialog {
+  border: none;
+  border-radius: 12px;
+  padding: 16px;
+  max-width: min(92vw, 560px);
+  background: var(--cream);
+  color: var(--cocoa-deep);
+  text-align: center;
+}
+
+.chocolate-world .rose-photo-dialog::backdrop {
+  background: rgba(18, 6, 13, 0.72);
+}
+
+.chocolate-world .rose-photo-dialog img {
+  width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #f4d4b9;
+}
+
+.chocolate-world .rose-photo-dialog p {
+  margin: 12px 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+}
+
+/* --- Reduced motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .kitchen-cat,
+  .melt-bubbles i,
+  .placed-topping {
+    animation: none;
+  }
+}
+
+/* --- Small screens --- */
+@media (max-width: 720px) {
+  .stir-ring {
+    width: 300px;
+    height: 300px;
+    top: -14px;
+  }
+
+  .melt-bubbles {
+    bottom: 104px;
+  }
+
+  .kitchen-cat {
+    right: 0;
+    bottom: 84px;
+  }
+
+  .pour-visual {
+    min-height: 480px;
+  }
+
+  .pour-stream-svg {
+    right: 0;
+  }
+
+  .pour-drop {
+    right: 0;
+  }
+}

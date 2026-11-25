@@ -7,7 +7,9 @@
  * the `nightGarden` profile (byte-identical sound); Propose gets `starChoir`
  * — quieter, more spacious: the same filtered-noise bed at lower gain,
  * sparser and higher pentatonic chimes, longer gaps. A proposal deserves
- * silence between notes.
+ * silence between notes. Chocolate gets `cocoaNight` — warmer and lower
+ * still: a darker noise bed, low marimba-ish notes, longer gaps, an
+ * occasional soft bubble-blip while the chocolate melts.
  *
  * - The AudioContext is created lazily, only from a user gesture (toggle
  *   click / door open). Nothing plays before that.
@@ -20,7 +22,7 @@
  *   at import time.
  */
 
-export type AmbienceProfile = 'nightGarden' | 'starChoir'
+export type AmbienceProfile = 'nightGarden' | 'starChoir' | 'cocoaNight'
 
 export interface AmbienceHandle {
   /** Starts the loop for the current profile. Returns false when audio is unavailable. */
@@ -45,6 +47,14 @@ export interface AmbienceHandle {
   playPop(): void
   /** Rising arpeggio (the shooting star launches). No-op without audio. */
   playLaunch(): void
+  /** Soft bubble-blip (a circular stir completes). No-op without audio. */
+  playStir(): void
+  /** Foil crinkle (a wrapper peels back). No-op without audio. */
+  playPeel(): void
+  /** Snap + rising chime (the golden centre cracks open). No-op without audio. */
+  playCrack(): void
+  /** Soft glug (chocolate pours into the mould). No-op without audio. */
+  playPour(): void
 }
 
 type AudioContextCtor = new () => AudioContext
@@ -94,6 +104,17 @@ const PROFILES: Record<AmbienceProfile, ProfileParams> = {
     chimeNotes: [1046.5, 1174.66, 1318.5, 1567.98, 1760.0],
     chimeGain: 0.07,
     chimeDecay: 3.2,
+  },
+  /** Chocolate's cocoa night — warmer and lower: a darker bed, low
+   *  marimba-ish notes, long gaps. A warm kitchen at night. */
+  cocoaNight: {
+    masterGain: 0.12,
+    noiseGain: 0.04,
+    noiseFilter: 220,
+    chimeInterval: 7500,
+    chimeNotes: [392.0, 440.0, 493.88, 587.33, 659.25],
+    chimeGain: 0.08,
+    chimeDecay: 2.8,
   },
 }
 
@@ -384,6 +405,74 @@ export function createAmbience(initialProfile: AmbienceProfile = 'nightGarden'):
     }
   }
 
+  /** Low bubble-blip: one completed circular stir. */
+  function playStir(): void {
+    playTone(293.66, 0.09, 0.5)
+  }
+
+  /** Foil crinkle: a short mid-band noise burst, no tonal blip. */
+  function playPeel(): void {
+    const context = getCtx()
+    if (!context) return
+    try {
+      void context.resume()
+      const now = context.currentTime
+      const length = Math.floor(context.sampleRate * 0.09)
+      const buffer = context.createBuffer(1, length, context.sampleRate)
+      const data = buffer.getChannelData(0)
+      for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / length)
+      const source = context.createBufferSource()
+      source.buffer = buffer
+      const filter = context.createBiquadFilter()
+      filter.type = 'bandpass'
+      filter.frequency.value = 1800
+      const gain = context.createGain()
+      gain.gain.value = 0.22
+      source.connect(filter)
+      filter.connect(gain)
+      gain.connect(context.destination)
+      source.start(now)
+    } catch {
+      // ignore
+    }
+  }
+
+  /** Snap + rising chime: the golden centre cracks open. */
+  function playCrack(): void {
+    const context = getCtx()
+    if (!context) return
+    try {
+      void context.resume()
+      const now = context.currentTime
+      // The snap: a short low noise burst.
+      const length = Math.floor(context.sampleRate * 0.08)
+      const buffer = context.createBuffer(1, length, context.sampleRate)
+      const data = buffer.getChannelData(0)
+      for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / length)
+      const source = context.createBufferSource()
+      source.buffer = buffer
+      const filter = context.createBiquadFilter()
+      filter.type = 'bandpass'
+      filter.frequency.value = 700
+      const gain = context.createGain()
+      gain.gain.value = 0.25
+      source.connect(filter)
+      filter.connect(gain)
+      gain.connect(context.destination)
+      source.start(now)
+    } catch {
+      // ignore — the chime below still plays
+    }
+    playTone(659.25, 0.12, 1.1)
+    playTone(987.77, 0.09, 1.3, 0.14)
+  }
+
+  /** Soft glug: two low tones stepping down as the chocolate pours. */
+  function playPour(): void {
+    playTone(220, 0.1, 0.5)
+    playTone(164.81, 0.1, 0.6, 0.18)
+  }
+
   return {
     start,
     stop,
@@ -398,6 +487,10 @@ export function createAmbience(initialProfile: AmbienceProfile = 'nightGarden'):
     playTwinkle,
     playPop,
     playLaunch,
+    playStir,
+    playPeel,
+    playCrack,
+    playPour,
   }
 }
 
