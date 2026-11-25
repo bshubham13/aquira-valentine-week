@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ChocolateExperience,
   HugExperience,
@@ -10,6 +10,19 @@ import {
   ValentineExperience,
 } from './Experiences'
 import './App.css'
+import {
+  applyGiftFallbacks,
+  decodeGift,
+  encodeGift,
+  loadDraft,
+  saveDraft,
+  GIFT_LIMITS,
+  SHARE_URL_WARN_LENGTH,
+} from './lib/giftCodec'
+import { roseAmbience } from './lib/roseAmbience'
+import { compressPhoto, validateImageFile } from './utils/photoCompressor'
+import { uploadPhotos } from './utils/photoUpload'
+import type { RosePhoto } from './photos'
 
 type DaySlug =
   | 'rose'
@@ -27,6 +40,7 @@ export type Gift = {
   from: string
   message: string
   extras: Record<string, string>
+  photos?: RosePhoto[]
   createdAt: number
 }
 
@@ -108,25 +122,6 @@ const DEFAULT_EXTRAS: Record<DaySlug, Record<string, string>> = {
   valentine: { memory: 'Somewhere between the first long conversation and the first comfortable silence, you became home.', reason: 'You make normal Tuesdays feel worth remembering.', future: 'More sunsets, stupid jokes, brave plans, and a ridiculous amount of us.' },
 }
 
-function encodeGift(gift: Gift) {
-  const bytes = new TextEncoder().encode(JSON.stringify(gift))
-  let binary = ''
-  bytes.forEach((byte) => { binary += String.fromCharCode(byte) })
-  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '')
-}
-
-function decodeGift(value: string): Gift | null {
-  try {
-    const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
-    const binary = atob(normalized + '='.repeat((4 - normalized.length % 4) % 4))
-    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
-    const parsed = JSON.parse(new TextDecoder().decode(bytes)) as Gift
-    return DAYS.some((day) => day.slug === parsed.day) ? parsed : null
-  } catch {
-    return null
-  }
-}
-
 function giftFromHash() {
   const match = window.location.hash.match(/^#gift=(.+)$/)
   return match ? decodeGift(match[1]) : null
@@ -178,7 +173,7 @@ function Home({ onCreate }: { onCreate: (day: DaySlug) => void }) {
     <Ambient dense />
     <nav className="nav wrap">
       <button className="brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="AquiraCraft home"><span className="brand-mark"><Icon name="heart" size={15} /></span><span>Aquira<span>Craft</span></span></button>
-      <div className="nav-side"><span className="nav-note">8 days · 8 different ways to say it</span><button className={`round-button ${sound ? 'active' : ''}`} onClick={() => setSound(!sound)} aria-label="Toggle ambience"><Icon name="sound" size={17} /></button></div>
+      <div className="nav-side"><span className="nav-note">8 days · 8 different ways to say it</span><button className={`round-button ${sound ? 'active' : ''}`} onClick={() => setSound(roseAmbience.toggle())} aria-label="Toggle ambience" aria-pressed={sound}><Icon name="sound" size={17} /></button></div>
     </nav>
     <section className="hero wrap">
       <div className="hero-copy"><div className="pill"><span /> Valentine week, but make it personal</div><h1>Don’t just send a<br />message.<br /><em>Make them feel it.</em></h1><p>Eight tiny romantic universes — crafted by you, experienced by them. Thoda filmy, kaafi personal, absolutely unforgettable.</p><button className="primary-button" onClick={() => document.querySelector('#days')?.scrollIntoView({ behavior: 'smooth' })}>Pick your moment <Icon name="arrow" /></button><div className="tiny-proof"><span className="avatar-stack"><i>♡</i><i>✦</i><i>☺</i></span><span>No login. No cringe templates.<br />Just your story, beautifully told.</span></div></div>
@@ -212,35 +207,120 @@ function DayMiniArt({ day, symbol }: { day: DaySlug; symbol: string }) {
 }
 
 function Creator({ initialDay, onBack, onOpenGift }: { initialDay: DaySlug; onBack: () => void; onOpenGift: (gift: Gift) => void }) {
-  const [daySlug, setDaySlug] = useState(initialDay)
-  const [to, setTo] = useState('Aashi')
-  const [from, setFrom] = useState('Kabir')
-  const [message, setMessage] = useState('If I could turn the way you make me feel into a place, I think it would look a little like this.')
-  const [extras, setExtras] = useState<Record<string, string>>({ ...DEFAULT_EXTRAS[initialDay] })
+  const [draft] = useState(() => loadDraft())
+  const [daySlug, setDaySlug] = useState<DaySlug>(draft?.daySlug ?? initialDay)
+  const [to, setTo] = useState(draft?.to ?? '')
+  const [from, setFrom] = useState(draft?.from ?? '')
+  const [message, setMessage] = useState(draft?.message ?? '')
+  const [extras, setExtras] = useState<Record<string, string>>(draft?.extras ?? {})
+  const [rosePhotos, setRosePhotos] = useState<Array<{ id: string; blob: Blob; dataUrl: string; caption: string }>>([])
+  const [photoError, setPhotoError] = useState('')
+  const [formError, setFormError] = useState('')
+  const [uploadStatus, setUploadStatus] = useState('')
+  const [creating, setCreating] = useState(false)
   const [shareUrl, setShareUrl] = useState('')
+  const [urlTooLong, setUrlTooLong] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [testPlayOpen, setTestPlayOpen] = useState(false)
+  const [previewKey, setPreviewKey] = useState(0)
+  const testPlayButtonRef = useRef<HTMLButtonElement | null>(null)
+  const testPlayDialogRef = useRef<HTMLDivElement | null>(null)
   const day = DAYS.find((item) => item.slug === daySlug)!
+
   useEffect(() => {
-    window.localStorage.setItem('aquira-valentine-draft', JSON.stringify({ daySlug, to, from, message, extras }))
+    saveDraft({ daySlug, to, from, message, extras })
   }, [daySlug, to, from, message, extras])
-  const changeDay = (slug: DaySlug) => { setDaySlug(slug); setExtras({ ...DEFAULT_EXTRAS[slug] }); setShareUrl('') }
-  const buildGift = (): Gift => ({ day: daySlug, to: to.trim() || 'My favourite human', from: from.trim() || 'Someone who adores you', message: message.trim() || 'You make the ordinary feel special.', extras, createdAt: Date.now() })
-  const createLink = () => { const gift = buildGift(); setShareUrl(`${window.location.origin}${window.location.pathname}#gift=${encodeGift(gift)}`); window.scrollTo({ top: 0, behavior: 'smooth' }) }
+
+  const changeDay = (slug: DaySlug) => { setDaySlug(slug); setExtras({}); setShareUrl(''); setFormError(''); setUrlTooLong(false) }
+
+  const buildDraftGift = (photos?: RosePhoto[]): Gift =>
+    applyGiftFallbacks({ day: daySlug, to, from, message, extras, photos: daySlug === 'rose' ? photos : undefined, defaults: DEFAULT_EXTRAS[daySlug] })
+
+  const addPhotos = async (files: FileList | null) => {
+    if (!files || files.length === 0) return
+    setPhotoError('')
+    const remaining = GIFT_LIMITS.photos - rosePhotos.length
+    if (remaining <= 0) { setPhotoError('Only 4 photos fit in this bouquet.'); return }
+    const picked = Array.from(files).slice(0, remaining)
+    if (files.length > remaining) setPhotoError(`Only 4 photos fit in this bouquet — taking the first ${remaining}.`)
+    for (const file of picked) {
+      const checked = validateImageFile(file)
+      if (!checked.valid) { setPhotoError(checked.error ?? 'That photo could not be used.'); continue }
+      try {
+        const compressed = await compressPhoto(file)
+        setRosePhotos((prev) => [...prev, { id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, blob: compressed.blob, dataUrl: compressed.dataUrl, caption: '' }])
+      } catch {
+        setPhotoError('That photo could not be compressed. Try a different one.')
+      }
+    }
+  }
+
+  const createLink = async () => {
+    setFormError('')
+    setUrlTooLong(false)
+    setCreating(true)
+    try {
+      let photos: RosePhoto[] | undefined
+      if (daySlug === 'rose' && rosePhotos.length > 0) {
+        setUploadStatus(`Uploading photo 1 of ${rosePhotos.length}…`)
+        photos = await uploadPhotos(
+          rosePhotos.map((p) => ({ blob: p.blob, caption: p.caption.trim().slice(0, GIFT_LIMITS.caption) })),
+          ({ done, total }) => setUploadStatus(`Uploading photo ${done} of ${total}…`),
+        )
+        setUploadStatus('')
+      }
+      const gift = buildDraftGift(photos)
+      const url = `${window.location.origin}${window.location.pathname}#gift=${encodeGift(gift)}`
+      if (url.length > SHARE_URL_WARN_LENGTH) setUrlTooLong(true)
+      setShareUrl(url)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch (error) {
+      setUploadStatus('')
+      setFormError(error instanceof Error ? error.message : 'Something went wrong while creating the link. Your draft is safe — try again.')
+    } finally {
+      setCreating(false)
+    }
+  }
+
   const copy = async () => { await navigator.clipboard.writeText(shareUrl); setCopied(true); window.setTimeout(() => setCopied(false), 1800) }
+
+  const openTestPlay = () => { setPreviewKey((key) => key + 1); setTestPlayOpen(true) }
+  const closeTestPlay = () => { setTestPlayOpen(false); testPlayButtonRef.current?.focus() }
+
+  useEffect(() => {
+    if (!testPlayOpen) return
+    testPlayDialogRef.current?.focus()
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); setTestPlayOpen(false); testPlayButtonRef.current?.focus(); return }
+      if (event.key !== 'Tab' || !testPlayDialogRef.current) return
+      const focusables = Array.from(testPlayDialogRef.current.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')).filter((el) => !el.hasAttribute('disabled'))
+      if (focusables.length === 0) return
+      const first = focusables[0]
+      const last = focusables[focusables.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [testPlayOpen])
 
   if (shareUrl) {
     const gift = decodeGift(shareUrl.split('#gift=')[1])!
-    return <main className="complete-screen" style={{ '--accent': day.accent, '--soft': day.soft } as React.CSSProperties}><Ambient dense /><div className="complete-burst"><i /><i /><i /><i /><i /><i /></div><section className="complete-card"><div className="complete-seal"><Icon name="check" size={34} /></div><span className="kicker">YOUR SECRET DOOR IS READY</span><h1>Okay, this is going to make<br /><em>{to || 'them'} feel things.</em></h1><p>Your {day.name} experience is wrapped, sealed, and carrying an unreasonable amount of butterflies.</p><div className="link-box"><Icon name="lock" size={17} /><span>{shareUrl}</span><button onClick={copy}>{copied ? 'Copied!' : <><Icon name="copy" size={17} /> Copy</>}</button></div><div className="complete-actions"><button className="primary-button" onClick={() => { window.location.hash = `gift=${encodeGift(gift)}`; onOpenGift(gift) }}>Open their experience <Icon name="arrow" /></button><button className="text-button" onClick={() => setShareUrl('')}><Icon name="back" size={17} /> Make a tiny edit</button></div><small>Anyone with this link can open the experience. No account needed.</small></section></main>
+    return <main className="complete-screen" style={{ '--accent': day.accent, '--soft': day.soft } as React.CSSProperties}><Ambient dense /><div className="complete-burst"><i /><i /><i /><i /><i /><i /></div><section className="complete-card"><div className="complete-seal"><Icon name="check" size={34} /></div><span className="kicker">YOUR SECRET DOOR IS READY</span><h1>Okay, this is going to make<br /><em>{to || 'them'} feel things.</em></h1><p>Your {day.name} experience is wrapped, sealed, and carrying an unreasonable amount of butterflies.</p><div className="link-box"><Icon name="lock" size={17} /><span>{shareUrl}</span><button onClick={copy}>{copied ? 'Copied!' : <><Icon name="copy" size={17} /> Copy</>}</button></div>{urlTooLong && <p className="form-error" role="alert">This link is unusually long — some apps may cut it off. Try a shorter note.</p>}<div className="complete-actions"><button className="primary-button" onClick={() => { window.location.hash = `gift=${encodeGift(gift)}`; onOpenGift(gift) }}>Open their experience <Icon name="arrow" /></button><button className="text-button" onClick={() => setShareUrl('')}><Icon name="back" size={17} /> Make a tiny edit</button></div><small>Anyone with this link can open the experience. No account needed.</small></section></main>
   }
 
-  return <main className="creator-shell" style={{ '--accent': day.accent, '--soft': day.soft } as React.CSSProperties}><Ambient /><nav className="creator-nav wrap"><button className="text-button" onClick={onBack}><Icon name="back" size={18} /> Back to the arcade</button><div className="brand"><span className="brand-mark"><Icon name="heart" size={15} /></span><span>Aquira<span>Craft</span></span></div><span className="autosave"><i /> Your magic is saved locally</span></nav><div className="creator-layout wrap"><section className="creator-form"><span className="kicker">CRAFTING · {day.eyebrow.toUpperCase()}</span><h1>Let’s make this feel<br /><em>exactly like you two.</em></h1><p className="form-intro">Little details make the magic hit different. Fill what feels right — we’ve already made the rest beautiful.</p><label className="field-label">Choose the experience</label><div className="day-picker">{DAYS.map((item) => <button className={item.slug === daySlug ? 'selected' : ''} title={item.name} onClick={() => changeDay(item.slug)} key={item.slug}>{item.number}<span>{item.symbol}</span></button>)}</div><div className="field-row"><label><span>Their name</span><input value={to} onChange={(event) => setTo(event.target.value)} placeholder="The lucky human" /></label><label><span>Your name</span><input value={from} onChange={(event) => setFrom(event.target.value)} placeholder="The romantic mastermind" /></label></div><label><span>Your opening note</span><textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={3} /></label><div className="form-divider"><span>{day.symbol}</span><i /></div>{EXTRA_FIELDS[daySlug].map((field) => <label key={field.key}><span>{field.label}</span>{field.type === 'textarea' ? <textarea rows={3} value={extras[field.key] ?? ''} placeholder={field.placeholder} onChange={(event) => setExtras({ ...extras, [field.key]: event.target.value })} /> : field.type === 'select' ? <select value={extras[field.key] ?? field.options?.[0]} onChange={(event) => setExtras({ ...extras, [field.key]: event.target.value })}>{field.options?.map((option) => <option key={option}>{option}</option>)}</select> : <input value={extras[field.key] ?? ''} placeholder={field.placeholder} onChange={(event) => setExtras({ ...extras, [field.key]: event.target.value })} />}</label>)}<button className="primary-button create-button" onClick={createLink}>Wrap it & create the link <Icon name="spark" /></button><p className="form-footnote"><Icon name="lock" size={14} /> Your words stay inside the link. Nothing is uploaded.</p></section><aside className="preview-side"><div className="preview-label"><span>LIVE PEEK</span><i>Recipient view</i></div><div className={`phone-preview preview-${daySlug}`}><div className="phone-bar"><i /><span>AQUIRA · PRIVATE</span><b>•••</b></div><div className="phone-content"><span className="preview-date">{day.date}</span><DayMiniArt day={daySlug} symbol={day.symbol} /><small>A little something for</small><h3>{to || 'your favourite human'}</h3><p>{message}</p><button>Begin the magic <Icon name="arrow" size={15} /></button></div><div className="phone-home" /></div><p className="preview-whisper">Psst — this is only the doorway.<br />The real experience has surprises inside.</p></aside></div></main>
+  return <main className="creator-shell" style={{ '--accent': day.accent, '--soft': day.soft } as React.CSSProperties}><Ambient /><nav className="creator-nav wrap"><button className="text-button" onClick={onBack}><Icon name="back" size={18} /> Back to the arcade</button><div className="brand"><span className="brand-mark"><Icon name="heart" size={15} /></span><span>Aquira<span>Craft</span></span></div><span className="autosave"><i /> Your magic is saved locally — and restored when you return</span></nav><div className="creator-layout wrap"><section className="creator-form"><span className="kicker">CRAFTING · {day.eyebrow.toUpperCase()}</span><h1>Let’s make this feel<br /><em>exactly like you two.</em></h1><p className="form-intro">Little details make the magic hit different. Fill what feels right — we’ve already made the rest beautiful.</p><label className="field-label">Choose the experience</label><div className="day-picker">{DAYS.map((item) => <button className={item.slug === daySlug ? 'selected' : ''} title={item.name} onClick={() => changeDay(item.slug)} key={item.slug}>{item.number}<span>{item.symbol}</span></button>)}</div><div className="field-row"><label><span>Their name</span><input value={to} onChange={(event) => setTo(event.target.value)} placeholder="The lucky human" maxLength={GIFT_LIMITS.to} /></label><label><span>Your name</span><input value={from} onChange={(event) => setFrom(event.target.value)} placeholder="The romantic mastermind" maxLength={GIFT_LIMITS.from} /></label></div><label><span>Your opening note</span><textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={3} maxLength={GIFT_LIMITS.message} /></label><div className="form-divider"><span>{day.symbol}</span><i /></div>{EXTRA_FIELDS[daySlug].map((field) => <label key={field.key}><span>{field.label}</span>{field.type === 'textarea' ? <textarea rows={3} value={extras[field.key] ?? ''} placeholder={field.placeholder} maxLength={GIFT_LIMITS.extra} onChange={(event) => setExtras({ ...extras, [field.key]: event.target.value })} /> : field.type === 'select' ? <select value={extras[field.key] ?? field.options?.[0]} onChange={(event) => setExtras({ ...extras, [field.key]: event.target.value })}>{field.options?.map((option) => <option key={option}>{option}</option>)}</select> : <input value={extras[field.key] ?? ''} placeholder={field.placeholder} maxLength={GIFT_LIMITS.extra} onChange={(event) => setExtras({ ...extras, [field.key]: event.target.value })} />}</label>)}{daySlug === 'rose' && <div className="photo-upload"><span className="field-label">Tuck in photos <i>(optional · up to 4)</i></span><p className="photo-hint">Photos are compressed on your device, stored privately for 14 days, then deleted.</p><div className="photo-slots">{rosePhotos.map((photo, index) => <div className="photo-slot" key={photo.id}><img src={photo.dataUrl} alt={`Rose photo ${index + 1}`} /><input value={photo.caption} maxLength={GIFT_LIMITS.caption} placeholder="A tiny caption…" aria-label={`Caption for photo ${index + 1}`} onChange={(event) => setRosePhotos((prev) => prev.map((p) => (p.id === photo.id ? { ...p, caption: event.target.value } : p)))} /><button type="button" className="photo-remove" aria-label={`Remove photo ${index + 1}`} onClick={() => setRosePhotos((prev) => prev.filter((p) => p.id !== photo.id))}>×</button></div>)}{rosePhotos.length < GIFT_LIMITS.photos && <label className="photo-add"><span>+ Add a photo</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple hidden onChange={(event) => { void addPhotos(event.target.files); event.target.value = '' }} /></label>}</div>{photoError && <p className="form-error" role="alert">{photoError}</p>}{uploadStatus && <p className="upload-status" role="status">{uploadStatus}</p>}</div>}<div className="creator-actions">{daySlug === 'rose' && <button className="secondary-button test-play-button" ref={testPlayButtonRef} onClick={openTestPlay}>🌹 Test Play — see it as they will</button>}<button className="primary-button create-button" onClick={() => void createLink()} disabled={creating}>{creating ? 'Wrapping…' : <>Wrap it & create the link <Icon name="spark" /></>}</button></div>{formError && <p className="form-error" role="alert">{formError}</p>}<p className="form-footnote"><Icon name="lock" size={14} /> {daySlug === 'rose' ? 'Your words stay inside the link. Photos are stored privately for 14 days, then deleted.' : 'Your words stay inside the link. Nothing is uploaded.'}</p></section><aside className="preview-side"><div className="preview-label"><span>LIVE PEEK</span><i>Recipient view</i></div><div className={`phone-preview preview-${daySlug}`}><div className="phone-bar"><i /><span>AQUIRA · PRIVATE</span><b>•••</b></div><div className="phone-content"><span className="preview-date">{day.date}</span><DayMiniArt day={daySlug} symbol={day.symbol} /><small>A little something for</small><h3>{to || 'your favourite human'}</h3><p>{message}</p><button>Begin the magic <Icon name="arrow" size={15} /></button></div><div className="phone-home" /></div><p className="preview-whisper">Psst — this is only the doorway.<br />The real experience has surprises inside.</p></aside></div>{testPlayOpen && daySlug === 'rose' && <div className="test-play-overlay" role="dialog" aria-modal="true" aria-label="Live preview: Rose Day" ref={testPlayDialogRef} tabIndex={-1}><div className="test-play-hud"><span>🌹 Live Preview: Rose Day</span><div className="test-play-hud-actions"><button className="test-play-restart" onClick={() => setPreviewKey((key) => key + 1)}>Start over</button><button className="test-play-exit" onClick={closeTestPlay} aria-label="Close preview">×</button></div></div><div className="test-play-stage"><RoseExperience key={previewKey} gift={buildDraftGift(rosePhotos.map((p) => ({ photoKey: '', caption: p.caption })))} previewPhotos={rosePhotos.map((p) => p.dataUrl)} /></div></div>}</main>
 }
 
 function Recipient({ gift, onLeave }: { gift: Gift; onLeave: () => void }) {
   const [opened, setOpened] = useState(() => import.meta.env.DEV && new URLSearchParams(window.location.search).get('previewGift') === '1')
+  const [muted, setMuted] = useState(false)
   const day = DAYS.find((item) => item.slug === gift.day)!
-  if (!opened) return <main className={`gift-door gift-door-${gift.day}`} style={{ '--accent': day.accent, '--soft': day.soft } as React.CSSProperties}><Ambient dense /><button className="gift-brand brand" onClick={onLeave}><span className="brand-mark"><Icon name="heart" size={15} /></span><span>Aquira<span>Craft</span></span></button><div className="door-orbit orbit-a" /><div className="door-orbit orbit-b" /><section className="door-card"><div className="door-date"><span>{day.date}</span><i>{day.symbol}</i></div><div className="wax-seal"><Icon name="heart" size={28} /></div><span className="kicker">A PRIVATE {day.name.toUpperCase()} EXPERIENCE</span><p className="door-for">A little universe was made for</p><h1>{gift.to}</h1><blockquote>“{gift.message}”</blockquote><button className="primary-button" onClick={() => setOpened(true)}>Open the secret door <Icon name="spark" /></button><small>Best experienced with sound on & guard down</small></section><p className="door-from">thoughtfully made by <strong>{gift.from}</strong></p></main>
-  return <div className={`experience experience-${gift.day}`} style={{ '--accent': day.accent, '--soft': day.soft } as React.CSSProperties}>{gift.day === 'rose' && <RoseExperience gift={gift} />}{gift.day === 'propose' && <ProposeExperience gift={gift} />}{gift.day === 'chocolate' && <ChocolateExperience gift={gift} />}{gift.day === 'teddy' && <TeddyExperience gift={gift} />}{gift.day === 'promise' && <PromiseExperience gift={gift} />}{gift.day === 'hug' && <HugExperience gift={gift} />}{gift.day === 'kiss' && <KissExperience gift={gift} />}{gift.day === 'valentine' && <ValentineExperience gift={gift} />}<button className="experience-exit" onClick={onLeave}>AquiraCraft <span>×</span></button></div>
+  useEffect(() => () => { roseAmbience.stop() }, [])
+  const leave = () => { roseAmbience.stop(); onLeave() }
+  const toggleMute = () => { const next = !muted; setMuted(next); roseAmbience.setMuted(next) }
+  if (!opened) return <main className={`gift-door gift-door-${gift.day}`} style={{ '--accent': day.accent, '--soft': day.soft } as React.CSSProperties}><Ambient dense /><button className="gift-brand brand" onClick={leave}><span className="brand-mark"><Icon name="heart" size={15} /></span><span>Aquira<span>Craft</span></span></button><div className="door-orbit orbit-a" /><div className="door-orbit orbit-b" /><section className="door-card"><div className="door-date"><span>{day.date}</span><i>{day.symbol}</i></div><div className="wax-seal"><Icon name="heart" size={28} /></div><span className="kicker">A PRIVATE {day.name.toUpperCase()} EXPERIENCE</span><p className="door-for">A little universe was made for</p><h1>{gift.to}</h1><blockquote>“{gift.message}”</blockquote><button className="primary-button" onClick={() => { roseAmbience.start(); setOpened(true) }}>Open the secret door <Icon name="spark" /></button><small>Best experienced with sound on & guard down</small></section><p className="door-from">thoughtfully made by <strong>{gift.from}</strong></p></main>
+  return <div className={`experience experience-${gift.day}`} style={{ '--accent': day.accent, '--soft': day.soft } as React.CSSProperties}>{gift.day === 'rose' && <RoseExperience gift={gift} />}{gift.day === 'propose' && <ProposeExperience gift={gift} />}{gift.day === 'chocolate' && <ChocolateExperience gift={gift} />}{gift.day === 'teddy' && <TeddyExperience gift={gift} />}{gift.day === 'promise' && <PromiseExperience gift={gift} />}{gift.day === 'hug' && <HugExperience gift={gift} />}{gift.day === 'kiss' && <KissExperience gift={gift} />}{gift.day === 'valentine' && <ValentineExperience gift={gift} />}<div className="experience-controls"><button className={`experience-sound ${muted ? 'muted' : ''}`} onClick={toggleMute} aria-label={muted ? 'Unmute ambience' : 'Mute ambience'} aria-pressed={!muted}>♪</button><button className="experience-exit" onClick={leave}>AquiraCraft <span>×</span></button></div></div>
 }
 
 export default App

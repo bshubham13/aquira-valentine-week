@@ -1,0 +1,18 @@
+{
+    "$schema": "node_modules/wrangler/config-schema.json",
+    "assets": {
+        "directory": "./dist",
+        "not_found_handling": "single-page-application"
+    },
+    "compatibility_date": "2024-11-01",
+    "kv_namespaces": [
+        {
+            "binding": "VALENTINE_PHOTOS",
+            "id": "00000000000000000000000000000000",
+            "preview_id": "00000000000000000000000000000000"
+        }
+    ],
+    "main": "src/worker/index.ts",
+    "name": "aquira-valentine-week",
+    "previews": {}
+}

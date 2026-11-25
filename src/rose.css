@@ -1,0 +1,681 @@
+/**
+ * Rose Day ("The Bloom Room") theme + stage styles.
+ * Template for the per-day theme files the other 7 days will follow.
+ *
+ * Tokens: --rose-deep (AA-safe text on soft pink), --garden (deep green),
+ * --moon (moonlight ivory). Every new Rose text colour is checked against
+ * its background for AA contrast — never pale-on-pale.
+ */
+
+.rose-world {
+  --rose-deep: #7a1030;
+  --garden: #22473a;
+  --moon: #fff6e8;
+}
+
+.secondary-button {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 20px;
+  color: #7a1030;
+  border: 1.5px solid #d92d58;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.secondary-button:hover {
+  background: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 18px rgba(122, 16, 48, 0.16);
+}
+.secondary-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.stage-hint {
+  color: #7a1030;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* ---------- Stage 1: Garden Gate ---------- */
+.rose-gate-stage {
+  text-align: center;
+}
+.garden-gate {
+  position: relative;
+  width: min(340px, 88vw);
+  margin: 26px auto 10px;
+}
+.gate-frame {
+  position: relative;
+  height: 190px;
+  border: 3px solid #7a1030;
+  border-radius: 120px 120px 6px 6px;
+  background: linear-gradient(180deg, #fff6e8 0%, #ffd3df 78%, #f3a5af 100%);
+  overflow: hidden;
+  perspective: 900px;
+}
+.gate-panel {
+  position: absolute;
+  inset: 0;
+  width: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+  color: #7a1030;
+  background: repeating-linear-gradient(90deg, #d92d58 0 10px, #b3123f 10px 20px);
+  backface-visibility: hidden;
+  transform-origin: left center;
+  will-change: transform;
+}
+.gate-panel span {
+  color: #fff6e8;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+.gate-right {
+  left: 50%;
+  transform-origin: right center;
+}
+.gate-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 78%, rgba(255, 246, 232, 0.95), rgba(255, 246, 232, 0) 62%);
+  pointer-events: none;
+}
+.gate-handle {
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 92px;
+  height: 34px;
+  border-radius: 20px;
+  background: #7a1030;
+  color: #fff6e8;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: grab;
+  touch-action: none;
+  box-shadow: 0 8px 18px rgba(122, 16, 48, 0.35);
+  will-change: transform;
+}
+.gate-handle:active {
+  cursor: grabbing;
+}
+.gate-hint {
+  color: #7a1030;
+  font-size: 13px;
+  margin: 22px 0 12px;
+}
+.rose-gate-stage .world-button {
+  margin-top: 10px;
+}
+
+/* ---------- Stage 2: Shy Thorn ---------- */
+.rose-stem-3d button {
+  touch-action: none;
+}
+.rose-stem-3d button.removed {
+  pointer-events: none;
+}
+
+/* ---------- Stage 3: Moonbeam ---------- */
+.garden-bed {
+  position: relative;
+}
+.moonbeam {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 246, 232, 0.98) 0%, rgba(255, 211, 223, 0.55) 45%, rgba(255, 211, 223, 0) 72%);
+  box-shadow: 0 0 34px 12px rgba(255, 246, 232, 0.5);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* ---------- Stage 4: Press the Moments ---------- */
+.petal-notes button.selected {
+  border-color: #7a1030;
+  box-shadow: 0 0 0 3px rgba(122, 16, 48, 0.18);
+  transform: translateY(-2px);
+}
+.finished-bouquet.drop-hot {
+  outline: 3px dashed #7a1030;
+  outline-offset: 8px;
+}
+.tucked-lines p {
+  margin: 6px 0;
+  color: #7a1030;
+  font-family: var(--serif);
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* ---------- Stage 5: Tie the Ribbon ---------- */
+.ribbon-stage {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 28px;
+  align-items: center;
+}
+.ribbon-visual {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+.ribbon-ring {
+  position: absolute;
+  width: 250px;
+  height: 250px;
+  pointer-events: none;
+}
+.ribbon-track {
+  fill: none;
+  stroke: rgba(122, 16, 48, 0.14);
+  stroke-width: 7;
+}
+.ribbon-progress {
+  fill: none;
+  stroke: #d92d58;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+.ribbon-bow {
+  position: absolute;
+  top: 12px;
+  right: 18px;
+  font-size: 34px;
+  filter: drop-shadow(0 4px 8px rgba(122, 16, 48, 0.3));
+}
+.ribbon-controls h2,
+.ribbon-controls p {
+  color: #3d1522;
+}
+.wind-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  margin: 16px 0;
+}
+.wind-button,
+.delivery-button {
+  position: relative;
+  overflow: hidden;
+  min-height: 52px;
+  flex: 1;
+  min-width: 220px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 22px;
+  color: #fff;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #fa416c, #c51845);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.wind-button i,
+.delivery-button i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.28);
+  transition: width 0.12s linear;
+}
+.wind-button span,
+.delivery-button span {
+  position: relative;
+  z-index: 1;
+}
+@media (max-width: 720px) {
+  .ribbon-stage {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Stage 6: Photo Petals ---------- */
+.photo-petals-stage {
+  text-align: center;
+}
+.photo-stage-copy h2,
+.photo-stage-copy p {
+  color: #3d1522;
+}
+.photo-stage-copy p {
+  color: #7a1030;
+}
+.photo-petals-wrap {
+  position: relative;
+  margin: 10px auto 0;
+  max-width: 560px;
+}
+.rose-3d-backdrop {
+  height: 240px;
+  border-radius: 12px;
+  background: radial-gradient(circle at 50% 30%, #fff6e8 0%, #ffd3df 70%, #f3a5af 100%);
+  overflow: hidden;
+}
+.rose-3d-backdrop .rose-bloom-3d {
+  margin: 30px auto 0;
+}
+.rose-polaroids {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: -30px;
+  position: relative;
+  z-index: 1;
+}
+.rose-polaroid {
+  width: 128px;
+  padding: 8px 8px 10px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 12px 26px rgba(122, 16, 48, 0.25);
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 0.25s;
+  text-align: center;
+  position: relative;
+}
+.rose-polaroid:hover {
+  transform: rotate(0deg) translateY(-4px) scale(1.04);
+}
+.rose-polaroid img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 2px;
+  display: block;
+  background: #ffd3df;
+}
+.rose-polaroid > span {
+  display: block;
+  margin-top: 7px;
+  color: #4e2532;
+  font-family: var(--serif);
+  font-size: 11px;
+  font-style: italic;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rose-polaroid.viewed {
+  outline: 2px solid #7a1030;
+  outline-offset: 2px;
+}
+.enlarge-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(122, 16, 48, 0.85);
+  color: #fff6e8;
+  font-size: 13px;
+  font-style: normal;
+}
+.photo-failed {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 150px;
+  background: #fff6e8;
+}
+.photo-placeholder {
+  font-size: 30px;
+  color: #d92d58;
+}
+.photo-empty {
+  margin: 18px auto;
+  max-width: 420px;
+  color: #7a1030;
+}
+.rose-photo-dialog {
+  border: none;
+  border-radius: 12px;
+  padding: 16px;
+  max-width: min(92vw, 560px);
+  background: #fff6e8;
+  color: #3d1522;
+  text-align: center;
+}
+.rose-photo-dialog::backdrop {
+  background: rgba(18, 6, 13, 0.72);
+}
+.rose-photo-dialog img {
+  width: 100%;
+  max-height: 62vh;
+  object-fit: contain;
+  border-radius: 8px;
+  background: #ffd3df;
+}
+.rose-photo-dialog p {
+  margin: 12px 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+}
+
+/* ---------- Stage 7: Hold to Deliver ---------- */
+.delivery-stage {
+  text-align: center;
+}
+.delivery-copy h2,
+.delivery-copy p {
+  color: #3d1522;
+}
+.delivery-copy p {
+  color: #7a1030;
+}
+.delivery-path-wrap {
+  position: relative;
+  max-width: 520px;
+  margin: 8px auto 0;
+  min-height: 150px;
+}
+.delivery-path {
+  width: 100%;
+  height: 120px;
+  overflow: visible;
+}
+.delivery-path path {
+  stroke: rgba(122, 16, 48, 0.35);
+  stroke-width: 2;
+  stroke-dasharray: 5 7;
+}
+.delivery-dot {
+  fill: #d92d58;
+}
+.delivery-bouquet {
+  position: absolute;
+  left: 0;
+  top: 0;
+  font-size: 34px;
+  will-change: transform;
+  filter: drop-shadow(0 6px 10px rgba(122, 16, 48, 0.3));
+}
+.delivery-destination {
+  position: absolute;
+  right: 0;
+  top: 8px;
+  text-align: right;
+  color: #7a1030;
+  font-family: var(--serif);
+}
+.delivery-destination span {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  font-family: inherit;
+}
+.delivery-destination strong {
+  font-size: 22px;
+}
+.delivery-hold {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+}
+.delivery-hold .delivery-button {
+  max-width: 340px;
+  width: 100%;
+}
+
+/* ---------- Finale ---------- */
+.finale-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin: 22px 0 6px;
+}
+.finale-photo-fan {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+.finale-fan-photo {
+  width: 84px;
+  margin: 0 -8px;
+  padding: 5px 5px 7px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 10px 22px rgba(122, 16, 48, 0.28);
+  transform: rotate(var(--tilt, 0deg));
+  transition: transform 0.25s;
+}
+.finale-fan-photo:hover {
+  transform: rotate(0deg) translateY(-6px) scale(1.06);
+  z-index: 1;
+}
+.finale-fan-photo img {
+  width: 100%;
+  height: 74px;
+  object-fit: cover;
+  border-radius: 2px;
+  display: block;
+  background: #ffd3df;
+}
+
+/* ---------- Creator: photo upload + Test Play ---------- */
+.creator-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 6px;
+}
+.test-play-button {
+  width: 100%;
+}
+.photo-upload {
+  margin: 4px 0 8px;
+}
+.photo-hint {
+  margin: 4px 0 12px;
+  color: #7a1030;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.photo-slots {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+.photo-slot {
+  position: relative;
+  border: 1px solid #decbd0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 8px;
+}
+.photo-slot img {
+  width: 100%;
+  height: 110px;
+  object-fit: cover;
+  border-radius: 4px;
+  display: block;
+  background: #ffd3df;
+}
+.photo-slot input {
+  margin-top: 8px;
+}
+.photo-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(122, 16, 48, 0.9);
+  color: #fff6e8;
+  font-size: 15px;
+  line-height: 1;
+}
+.photo-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 150px;
+  border: 1.5px dashed #d92d58;
+  border-radius: 6px;
+  color: #7a1030;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.5);
+}
+.form-error {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 4px;
+  background: #fde8ec;
+  color: #7a1030;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.upload-status {
+  margin: 10px 0;
+  color: #7a1030;
+  font-size: 12px;
+}
+
+/* ---------- Test Play overlay ---------- */
+.test-play-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: #12060d;
+  outline: none;
+  overflow: hidden;
+}
+.test-play-hud {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #1e0a14;
+  color: #fff6f8;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+.test-play-hud-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.test-play-restart {
+  padding: 8px 14px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff6f8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.test-play-exit {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff6e8;
+  font-size: 20px;
+  line-height: 1;
+}
+.test-play-stage {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+.test-play-stage .rose-world {
+  min-height: 100%;
+}
+
+/* ---------- Experience shell controls ---------- */
+.experience-controls {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 40;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.experience-sound {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(18, 6, 13, 0.55);
+  color: #fff6e8;
+  font-size: 19px;
+  line-height: 1;
+  backdrop-filter: blur(4px);
+}
+.experience-sound.muted {
+  opacity: 0.55;
+  text-decoration: line-through;
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .rose-world *,
+  .test-play-overlay * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .gate-handle {
+    cursor: pointer;
+  }
+}
