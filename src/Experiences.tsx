@@ -142,7 +142,8 @@ function usePhotoEnlarge() {
 export function RoseExperience({ gift, previewPhotos, testPlay = false }: { gift: Gift; previewPhotos?: readonly string[]; testPlay?: boolean }) {
   const photos = gift.photos ?? []
   const [stage, setStage] = useState(initialStage)
-  const [thornsRemoved, setThornsRemoved] = useState<number[]>([])
+  const [water, setWater] = useState(0)
+  const [watering, setWatering] = useState(false)
   const [rosesBloomed, setRosesBloomed] = useState<number[]>([])
   const [momentsTucked, setMomentsTucked] = useState<number[]>([])
   const [ribbon, setRibbon] = useState('')
@@ -150,26 +151,24 @@ export function RoseExperience({ gift, previewPhotos, testPlay = false }: { gift
   const [delivery, setDelivery] = useState(0)
   const [gateProgress, setGateProgress] = useState(0)
   const [knocks, setKnocks] = useState(0)
-  const [dodges, setDodges] = useState(0)
-  const [dodged, setDodged] = useState(false)
   const [selectedMoment, setSelectedMoment] = useState<number | null>(null)
   const [photosViewed, setPhotosViewed] = useState<number[]>([])
   const [failedPhotos, setFailedPhotos] = useState<number[]>([])
   const enlarge = usePhotoEnlarge()
+  const waterHold = useHoldProgress(setWater, 2, 30)
   const windHold = useHoldProgress(setWind, 3, 32)
   const deliveryHold = useHoldProgress(setDelivery, 2, 28)
 
   // Refs for effect-driven mutations (avoid stale closures in GSAP callbacks).
-  const thornsRemovedRef = useRef<number[]>([])
   const rosesBloomedRef = useRef<number[]>([])
   const momentsTuckedRef = useRef<number[]>([])
   const bowPoppedRef = useRef(false)
   const chimedRef = useRef(false)
+  const wateredRef = useRef(false)
   const gateRef = useRef<HTMLDivElement | null>(null)
   const gateLeftRef = useRef<HTMLDivElement | null>(null)
   const gateRightRef = useRef<HTMLDivElement | null>(null)
   const gateHandleRef = useRef<HTMLDivElement | null>(null)
-  const thornRefs = useRef<Array<HTMLButtonElement | null>>([])
   const bedRef = useRef<HTMLDivElement | null>(null)
   const beamRef = useRef<HTMLDivElement | null>(null)
   const spotRefs = useRef<Array<HTMLButtonElement | null>>([])
@@ -185,7 +184,7 @@ export function RoseExperience({ gift, previewPhotos, testPlay = false }: { gift
 
   const roseState: RoseStageState = {
     gateOpen: gateProgress >= 100,
-    thornsRemoved: thornsRemoved.length,
+    watered: water,
     rosesBloomed: rosesBloomed.length,
     momentsTucked: momentsTucked.length,
     ribbonTied: wind >= 100,
@@ -197,13 +196,14 @@ export function RoseExperience({ gift, previewPhotos, testPlay = false }: { gift
   const advance = () => { if (canAdvanceRose(stage, roseState)) setStage(nextRoseStage(stage)) }
 
   const reset = () => {
-    thornsRemovedRef.current = []
     rosesBloomedRef.current = []
     momentsTuckedRef.current = []
     bowPoppedRef.current = false
     chimedRef.current = false
+    wateredRef.current = false
     setStage(1)
-    setThornsRemoved([])
+    setWater(0)
+    setWatering(false)
     setRosesBloomed([])
     setMomentsTucked([])
     setRibbon('')
@@ -211,23 +211,19 @@ export function RoseExperience({ gift, previewPhotos, testPlay = false }: { gift
     setDelivery(0)
     setGateProgress(0)
     setKnocks(0)
-    setDodges(0)
-    setDodged(false)
     setSelectedMoment(null)
     setPhotosViewed([])
     setFailedPhotos([])
   }
 
-  const thornLines = [
-    `Easy, ${gift.to}. Pretty cheezon ke thode boundaries hote hain. Relatable?`,
-    'One thorn down. Emotional availability up by 23%.',
-    `Rosie says: ${gift.from} ne quality control personally kiya hai. Very serious business.`,
-    'Stem safe. Heart still dangerously exposed.',
-  ]
   const moments = [gift.extras.memory, gift.extras.compliment, gift.message]
-  const bubble = dodged && !thornsRemoved.includes(3)
-    ? 'Arre, pakad ke dikhao! Rosie ko chhoona itna aasan nahi.'
-    : thornLines[Math.min(thornsRemoved.length, thornLines.length - 1)]
+  const waterBubble = water >= 100
+    ? 'Aah! Fresh ho gayi. Ab main moonlight ke liye ready hoon.'
+    : water >= 70
+      ? 'Bas thoda aur… main almost bloom karne wali hoon.'
+      : water >= 30
+        ? 'Haan, haan, aur thoda! Feel ho raha hai, petals jaag rahe hain.'
+        : 'Paani! Itni lambi journey ke baad main literally murjha gayi hoon.'
 
   // --- Stage 1: Garden Gate (GSAP Draggable) ---
   useEffect(() => {
@@ -280,56 +276,30 @@ export function RoseExperience({ gift, previewPhotos, testPlay = false }: { gift
     }
   }
 
-  // --- Stage 2: Thorn Negotiation (drag-off + Shy Thorn) ---
-  const removeThorn = (thorn: number) => {
-    if (thornsRemovedRef.current.includes(thorn)) return
-    thornsRemovedRef.current = [...thornsRemovedRef.current, thorn]
-    setThornsRemoved(thornsRemovedRef.current)
-    setDodged(false)
-    const el = thornRefs.current[thorn]
-    if (el && !prefersReducedMotion()) {
-      gsap.to(el, { x: thorn % 2 ? 140 : -140, y: -70, rotation: 220, opacity: 0, duration: 0.45, ease: 'power2.in' })
-    }
-    roseAmbience.playSnip()
-    vibrate(15)
+  // --- Stage 2: Water the Rose (hold-to-water) ---
+  const startWatering = () => {
+    setWatering(true)
+    waterHold.start()
   }
 
-  const shyHop = (thorn: number) => {
-    const el = thornRefs.current[thorn]
-    if (el && !prefersReducedMotion()) {
-      gsap.to(el, { x: (Math.random() - 0.5) * 120, y: (Math.random() - 0.5) * 60, duration: 0.4, ease: 'back.out(2)' })
-    }
-    setDodges((d) => d + 1)
-    setDodged(true)
+  const stopWatering = () => {
+    setWatering(false)
+    waterHold.stop()
   }
 
-  const handleThornTap = (thorn: number) => {
-    if (thornsRemoved.includes(thorn)) return
-    if (thorn === 3 && dodges < 3) { shyHop(thorn); return }
-    removeThorn(thorn)
-  }
-
-  const handleThornHover = (thorn: number) => {
-    if (thorn !== 3 || thornsRemoved.includes(thorn) || dodges >= 3 || prefersReducedMotion()) return
-    shyHop(thorn)
+  const waterForMe = () => {
+    const obj = { v: water }
+    gsap.to(obj, { v: 100, duration: 1.2, ease: 'power1.inOut', onUpdate: () => setWater(Math.round(obj.v)) })
   }
 
   useEffect(() => {
-    if (stage !== 2 || prefersReducedMotion()) return
-    const draggables = thornRefs.current.map((el, index) => {
-      if (!el) return null
-      return Draggable.create(el, {
-        type: 'x,y',
-        inertia: true,
-        onDragEnd(this: Draggable) {
-          const moved = Math.hypot(this.x, this.y)
-          if (moved > 48) removeThorn(index)
-          else gsap.to(el, { x: 0, y: 0, duration: 0.4, ease: 'elastic.out(1, 0.5)' })
-        },
-      })[0]
-    })
-    return () => { draggables.forEach((d) => d?.kill()) }
-  }, [stage])
+    if (water >= 100 && !wateredRef.current) {
+      wateredRef.current = true
+      roseAmbience.playChime()
+      vibrate(40)
+    }
+    if (water < 100) wateredRef.current = false
+  }, [water])
 
   // --- Stage 3: Wake the Bouquet (moonbeam bloom) ---
   const bloomSpot = (spot: number) => {
@@ -526,29 +496,34 @@ export function RoseExperience({ gift, previewPhotos, testPlay = false }: { gift
             )}
 
             {stage === 2 && (
-              <section className="rose-inspection scene-panel">
+              <section
+                className="rose-inspection scene-panel water-stage"
+                style={{ '--droop': `${((100 - water) / 100) * 12}deg`, '--bloom-life': `${0.55 + (water / 100) * 0.45}` } as React.CSSProperties}
+              >
                 <div className="scene-copy">
                   <span>STEP 01 · HANDLE WITH FEELINGS</span>
-                  <h2>Make it safe to hold.</h2>
-                  <p>Drag every thorn off the stem — or just tap one. Rosie the rose has boundaries, but she’s willing to negotiate.</p>
-                  <div className="character-bubble"><b>ROSIE</b>{bubble}</div>
+                  <h2>She’s thirsty.</h2>
+                  <p>Rosie gate se hokar aayi hai — long journey, zero paani. Hold the button and water her till she perks up.</p>
+                  <div className="character-bubble"><b>ROSIE</b>{waterBubble}</div>
+                  <div className="wind-row">
+                    <button
+                      className="wind-button"
+                      onPointerDown={startWatering}
+                      onPointerUp={stopWatering}
+                      onPointerLeave={stopWatering}
+                      onKeyDown={(event) => { if (event.key === ' ' && !event.repeat) { event.preventDefault(); startWatering() } }}
+                      onKeyUp={stopWatering}
+                    ><i style={{ width: `${water}%` }} /><span>{water < 100 ? `HOLD TO WATER · ${water}%` : 'ROSIE IS FRESH'}</span></button>
+                    {water < 100 && <button className="secondary-button" onClick={waterForMe}>Water it for me</button>}
+                  </div>
                   {canAdvanceRose(2, roseState) && <button className="world-button" onClick={advance}>Take Rosie to the moonlight <Icon name="spark" /></button>}
                 </div>
                 <div className="hero-rose-object">
                   <div className="rose-bloom-3d"><i /><i /><i /><i /><i /><b>♥</b></div>
-                  <div className="rose-stem-3d">
-                    {[0, 1, 2, 3].map((thorn) => (
-                      <button
-                        aria-label={`Remove thorn ${thorn + 1}${thorn === 3 ? ' (the shy one)' : ''}`}
-                        className={thornsRemoved.includes(thorn) ? 'removed' : ''}
-                        key={thorn}
-                        ref={(el) => { thornRefs.current[thorn] = el }}
-                        onClick={() => handleThornTap(thorn)}
-                        onPointerEnter={() => handleThornHover(thorn)}
-                        style={{ '--thorn-y': `${17 + thorn * 19}%`, '--thorn-side': thorn % 2 ? '1' : '-1' } as React.CSSProperties}
-                      >◆</button>
-                    ))}
-                  </div>
+                  <div className="rose-stem-3d" />
+                  {watering && !reducedMotion && (
+                    <div className="water-drops" aria-hidden="true"><i>💧</i><i>💧</i><i>💧</i><i>💧</i><i>💧</i></div>
+                  )}
                   <span className="rose-tag">{gift.extras.roseColor}<br /><strong>one of one</strong></span>
                 </div>
               </section>

@@ -30,7 +30,7 @@ button/tap alternative, a keyboard path, and a reduced-motion fallback
 | # | Stage | Interaction | Gate |
 |---|-------|-------------|------|
 | 1 | Garden Gate | GSAP Draggable (x, 0–160, Inertia) swings both panels (rotateY); snap open ≥ 60% else elastic snap-back. "Knock twice" button alternative. | gate open |
-| 2 | Thorn Negotiation | 4 thorns draggable off (fling > 48 px removes) or tap; keyboard Enter/Space. **Shy Thorn (index 3)** dodges pointer (hover desktop, tap touch) max 3 times, then surrenders; keyboard always removes. Snip sound + vibrate per removal. | 4 removed |
+| 2 | Water the Rose | Hold-to-water via `useHoldProgress` (pointer or Space hold); droplets fall while holding, the stem straightens and the bloom brightens as the meter fills. "Water it for me" animates water to 100; chime + vibrate on completion. Release pauses; reduced motion keeps the hold working (droplets hidden). | water 100% |
 | 3 | Wake the Bouquet | Moonbeam follows the pointer (`gsap.quickTo`); roses bloom under it; tap-to-plant stays. Small confetti petal burst per bloom. | 5 of 7 bloomed |
 | 4 | Press the Moments | 3 note cards Draggable + `hitTest` on the bouquet drop zone (drop-hot highlight); tucked cards fly to the bouquet (GSAP) and reappear as tucked lines. Tap alternative: tap card, tap bouquet. | 3 tucked |
 | 5 | Tie the Ribbon | Hold-to-wind via `useHoldProgress` driving an SVG ring (r=70, C≈440); "Tie it for me" animates wind to 100; bow pops elastic on completion; Space hold works. | wind 100% |
@@ -47,8 +47,10 @@ Shared pieces: `usePhotoEnlarge` (dialog hook, used by stage 6 + finale fan),
 - **H1 — real sound:** `src/lib/roseAmbience.ts`. Synthesized "night garden"
   loop (filtered noise + sparse C-major pentatonic chimes, master gain 0.14),
   AudioContext created lazily on a user gesture only (Home toggle, door open).
-  Mute is real (`suspend()`/`resume()`). One-shots `playSnip()` (thorn) and
-  `playChime()` (delivery) work even when the loop is off. No audio files.
+  Mute is real (`suspend()`/`resume()`). One-shot `playChime()` (watering
+  complete + delivery) works even when the loop is off. No audio files.
+  `playSnip()` is retained in the module (still unit-tested) but no stage
+  uses it since the thorn stage was replaced.
   The Home toggle and the in-experience ♪ button both drive the same
   singleton; leaving an experience stops the loop.
 - **H2 — draft restore:** `loadDraft()` in `src/lib/giftCodec.ts` restores the
