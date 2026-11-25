@@ -5,4 +5,4 @@
  */
 import type { DaySlug } from './giftCodec'
 
-export const PHOTO_DAYS: ReadonlySet<DaySlug> = new Set(['rose', 'propose'])
+export const PHOTO_DAYS: ReadonlySet<DaySlug> = new Set(['rose', 'propose', 'chocolate'])

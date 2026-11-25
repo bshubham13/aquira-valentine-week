@@ -126,8 +126,9 @@ test('applyGiftFallbacks fills empty Propose fields from DEFAULT_EXTRAS.propose 
 test('PHOTO_DAYS includes propose (and still includes rose)', () => {
   assert.equal(PHOTO_DAYS.has('propose'), true, 'Propose gets photo slots + Test Play')
   assert.equal(PHOTO_DAYS.has('rose'), true, 'Rose keeps photo slots + Test Play')
-  assert.equal(PHOTO_DAYS.has('chocolate'), false, 'other days are not photo days yet')
-  assert.equal(PHOTO_DAYS.size, 2)
+  assert.equal(PHOTO_DAYS.has('chocolate'), true, 'Chocolate joined in its own pilot')
+  assert.equal(PHOTO_DAYS.has('teddy'), false, 'other days are not photo days yet')
+  assert.equal(PHOTO_DAYS.size, 3)
 })
 
 function fakeWindow() {
