@@ -1,0 +1,266 @@
+import { useEffect, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react'
+import type { Gift } from './App'
+
+type IconName = 'heart' | 'arrow' | 'spark'
+
+function Icon({ name, size = 20 }: { name: IconName; size?: number }) {
+  const paths: Record<IconName, ReactNode> = {
+    heart: <path d="M20.8 4.7a5.5 5.5 0 0 0-7.8 0L12 5.8l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.4 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z" />,
+    arrow: <><path d="M5 12h14" /><path d="m13 6 6 6-6 6" /></>,
+    spark: <path d="m12 3-1.2 4.3a5 5 0 0 1-3.5 3.5L3 12l4.3 1.2a5 5 0 0 1 3.5 3.5L12 21l1.2-4.3a5 5 0 0 1 3.5-3.5L21 12l-4.3-1.2a5 5 0 0 1-3.5-3.5Z" />,
+  }
+  return <svg aria-hidden="true" className="icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">{paths[name]}</svg>
+}
+
+function StageTop({ label, step, total }: { label: string; step: number; total: number }) {
+  return <header className="stage-top"><span>{label}</span><div>{Array.from({ length: total }, (_, index) => <i key={index} className={index < step ? 'done' : ''} />)}</div><b>{String(step).padStart(2, '0')} / {String(total).padStart(2, '0')}</b></header>
+}
+
+function Celebration() {
+  return <div className="celebration" aria-hidden="true">{Array.from({ length: 32 }, (_, index) => <i key={index} style={{ '--i': index } as React.CSSProperties}>{index % 3 === 0 ? '♥' : '•'}</i>)}</div>
+}
+
+function Finale({ gift, title, children, badge = 'DELIVERED · FELT · YOURS' }: { gift: Gift; title: ReactNode; children: ReactNode; badge?: string }) {
+  return <section className="finale"><Celebration /><span className="finale-kicker">{badge}</span><h2>{title}</h2><div className="finale-copy">{children}</div><div className="signature">with a full heart,<br /><strong>{gift.from}</strong></div><span className="finale-mark"><Icon name="heart" size={18} /> MADE ON AQUIRACRAFT</span></section>
+}
+
+function useHoldProgress(setValue: Dispatch<SetStateAction<number>>, amount = 2, delay = 32) {
+  const timer = useRef<number | null>(null)
+  const stop = () => {
+    if (timer.current !== null) window.clearInterval(timer.current)
+    timer.current = null
+  }
+  const start = () => {
+    if (timer.current !== null) return
+    timer.current = window.setInterval(() => {
+      setValue((value) => {
+        const next = Math.min(100, value + amount)
+        if (next >= 100) stop()
+        return next
+      })
+    }, delay)
+  }
+  useEffect(() => () => {
+    if (timer.current !== null) window.clearInterval(timer.current)
+  }, [])
+  return { start, stop }
+}
+
+function SoftParticles({ count = 24 }: { count?: number }) {
+  return <div className="soft-particles" aria-hidden="true">{Array.from({ length: count }, (_, i) => <i key={i} style={{ '--x': `${(i * 43) % 100}%`, '--y': `${(i * 29) % 96}%`, '--d': `${(i % 8) * -.55}s`, '--s': `${4 + i % 7}px` } as React.CSSProperties} />)}</div>
+}
+
+function initialStage() {
+  if (!import.meta.env.DEV) return 1
+  const requested = Number(new URLSearchParams(window.location.search).get('journeyStage'))
+  return Number.isInteger(requested) && requested >= 1 && requested <= 5 ? requested : 1
+}
+
+export function RoseExperience({ gift }: { gift: Gift }) {
+  const [stage, setStage] = useState(initialStage)
+  const [thorns, setThorns] = useState<number[]>([])
+  const [roses, setRoses] = useState<number[]>([])
+  const [ribbon, setRibbon] = useState('')
+  const [petals, setPetals] = useState<number[]>([])
+  const [delivery, setDelivery] = useState(0)
+  const hold = useHoldProgress(setDelivery, 2, 28)
+  const thornLines = [
+    `Easy, ${gift.to}. Pretty cheezon ke thode boundaries hote hain. Relatable?`,
+    'One thorn down. Emotional availability up by 23%.',
+    `Rosie says: ${gift.from} ne quality control personally kiya hai. Very serious business.`,
+    'Stem safe. Heart still dangerously exposed.',
+  ]
+  const moments = [gift.extras.memory, gift.extras.compliment, gift.message]
+
+  if (stage === 5) {
+    return <Finale gift={gift} badge="HAND-DELIVERED · ONE OF ONE" title={<>Not just a rose.<br /><em>A whole “I noticed you.”</em></>}><p>{gift.extras.compliment}</p><blockquote>“{gift.extras.memory}”</blockquote><p className="finale-hinglish">Phool eventually dry ho jaate hain. Yeh feeling save kar lena.</p></Finale>
+  }
+
+  return <main className="rose-world expanded-world"><SoftParticles /><StageTop label="THE BLOOM ROOM" step={stage} total={5} />
+    {stage === 1 && <section className="experience-intro rose-intro"><span className="kicker">A PRIVATE FLORAL DELIVERY</span><h1>A rose chose<br /><em>{gift.to}.</em></h1><p>Normal bouquet nahi hai. Thoda nakhre wala, kaafi pretty, aur suspiciously personal.</p><button className="world-button" onClick={() => setStage(2)}>Accept the delivery <Icon name="arrow" /></button><div className="rose-silhouette"><i /><i /><i /><b /></div></section>}
+
+    {stage === 2 && <section className="rose-inspection scene-panel"><div className="scene-copy"><span>STEP 01 · HANDLE WITH FEELINGS</span><h2>Make it safe to hold.</h2><p>Tap every thorn. Rosie the rose has boundaries, but she’s willing to negotiate.</p><div className="character-bubble"><b>ROSIE</b>{thornLines[Math.min(thorns.length, thornLines.length - 1)]}</div>{thorns.length === 4 && <button className="world-button" onClick={() => setStage(3)}>Take Rosie to the moonlight <Icon name="spark" /></button>}</div><div className="hero-rose-object"><div className="rose-bloom-3d"><i /><i /><i /><i /><i /><b>♥</b></div><div className="rose-stem-3d">{[0,1,2,3].map((thorn) => <button aria-label={`Remove thorn ${thorn + 1}`} className={thorns.includes(thorn) ? 'removed' : ''} key={thorn} onClick={() => !thorns.includes(thorn) && setThorns([...thorns, thorn])} style={{ '--thorn-y': `${17 + thorn * 19}%`, '--thorn-side': thorn % 2 ? '1' : '-1' } as React.CSSProperties}>◆</button>)}</div><span className="rose-tag">{gift.extras.roseColor}<br /><strong>one of one</strong></span></div></section>}
+
+    {stage === 3 && <section className="garden-stage"><div className="moon">for<br /><strong>{gift.to}</strong></div><div className="garden-copy"><span>THE ROSE REMEMBERS</span><h2>Wake the rest of the bouquet.</h2><p>{roses.length < 5 ? `${5 - roses.length} feelings abhi bhi shy ban rahe hain…` : 'Full filmy garden unlocked. Zero regrets.'}</p></div><div className="garden-bed">{Array.from({ length: 7 }, (_, spot) => <button aria-label="Grow a rose" key={spot} className={roses.includes(spot) ? 'bloomed' : ''} onClick={() => !roses.includes(spot) && setRoses([...roses, spot])} style={{ '--x': `${8 + (spot * 14) % 86}%`, '--h': `${70 + (spot % 3) * 24}px`, '--d': `${spot * .08}s` } as React.CSSProperties}><i className="stem" /><i className="leaf" /><span className="flower"><b /><b /><b /><b /><em>♥</em></span></button>)}</div>{roses.length >= 5 && <button className="world-button floating-next" onClick={() => setStage(4)}>Bring them to the wrapping table <Icon name="arrow" /></button>}</section>}
+
+    {stage === 4 && <section className="bouquet-studio scene-panel"><div className="bouquet-table"><div className={`finished-bouquet ribbon-${ribbon || 'none'}`}>{Array.from({ length: 7 }, (_, i) => <i key={i} style={{ '--r': `${-42 + i * 14}deg`, '--c': i % 2 ? '#ff6b8c' : '#d92d58' } as React.CSSProperties}><b /><span /></i>)}<div className="bouquet-wrap" /><strong>{ribbon ? `${ribbon} ribbon` : 'choose a ribbon'}</strong></div></div><div className="bouquet-controls"><span>THE FINAL ARRANGEMENT</span><h2>Make the bouquet feel like “us.”</h2><label>CHOOSE THE RIBBON</label><div className="ribbon-options">{['velvet','satin','chaos'].map((item) => <button className={ribbon === item ? 'selected' : ''} onClick={() => setRibbon(item)} key={item}>{item === 'chaos' ? 'cute chaos' : item}</button>)}</div><label>TUCK THREE MOMENTS BETWEEN THE PETALS</label><div className="petal-notes">{moments.map((moment, i) => <button className={petals.includes(i) ? 'tucked' : ''} key={i} onClick={() => !petals.includes(i) && setPetals([...petals, i])}><i>❀</i><span>{petals.includes(i) ? moment : ['a memory','a truth','a feeling'][i]}</span></button>)}</div>{ribbon && petals.length === 3 && <div className="delivery-hold"><p>{delivery < 100 ? 'Hold to hand it to them — gently, filmy human.' : `Delivered to ${gift.to}. Rosie is blushing.`}</p><button onPointerDown={hold.start} onPointerUp={hold.stop} onPointerLeave={hold.stop}><i style={{ width: `${delivery}%` }} /><Icon name="heart" /><span>{delivery < 100 ? 'HOLD TO GIFT THE ROSE' : 'ROSE RECEIVED'}</span></button>{delivery >= 100 && <button className="world-button" onClick={() => setStage(5)}>See what the rose was carrying <Icon name="spark" /></button>}</div>}</div></section>}
+  </main>
+}
+
+export function ProposeExperience({ gift }: { gift: Gift }) {
+  const [stage, setStage] = useState(initialStage)
+  const [checkpoint, setCheckpoint] = useState(0)
+  const [reaction, setReaction] = useState('The universe needs three very serious answers.')
+  const [stars, setStars] = useState<number[]>([])
+  const [nerves, setNerves] = useState<number[]>([])
+  const [noPos, setNoPos] = useState({ x: 0, y: 0 })
+  const questions = [
+    { q: `${gift.from} steals your fries. Legal response?`, a: ['fake gussa, then share', 'steal dessert back'], r: 'Healthy conflict resolution. Court approves.' },
+    { q: 'Ideal date duration?', a: ['2 hours, civilized', 'accidentally till 2 AM'], r: '“Accidentally.” Sure. Bilkul believable.' },
+    { q: `When ${gift.extras.nickname || gift.to} smiles, system status?`, a: ['normal-ish', 'brain.exe has stopped'], r: 'Diagnostic complete: butterflies, chronic.' },
+  ]
+  const answer = (text: string) => {
+    setReaction(`${text} — ${questions[checkpoint].r}`)
+    setCheckpoint((value) => value + 1)
+  }
+  const dodge = () => setNoPos({ x: Math.round(Math.random() * 150 - 75), y: Math.round(Math.random() * 90 - 45) })
+
+  if (stage === 5) return <Finale gift={gift} badge="COSMICALLY CONFIRMED · NO TAKEBACKS" title={<>Plot twist:<br /><em>the universe ships you two.</em></>}><p>Dear {gift.extras.nickname || gift.to}, you just made one dramatic human extremely happy.</p><blockquote>“{gift.message}”</blockquote><p className="finale-hinglish">Screenshot le lo. Kal ko bole “maine कब haan bola?” toh evidence ready hai.</p></Finale>
+
+  return <main className="sky-world expanded-world"><div className="star-field">{Array.from({ length: 64 }, (_, i) => <i key={i} style={{ '--x': `${(i * 47) % 100}%`, '--y': `${(i * 31) % 92}%`, '--d': `${i % 7}s` } as React.CSSProperties} />)}</div><StageTop label="WRITTEN IN THE STARS" step={stage} total={5} />
+    {stage === 1 && <section className="experience-intro sky-intro"><span className="kicker">TRANSMISSION FROM SOMEONE ACTING NORMAL</span><h1>{gift.to}, the sky has<br /><em>a suspicious agenda.</em></h1><p>Big question abhi nahi. Universe pehle vibe check karega. Very professional setup.</p><button className="world-button" onClick={() => setStage(2)}>Begin the cosmic background check <Icon name="spark" /></button></section>}
+    {stage === 2 && <section className="cosmic-checkpoint scene-panel"><div className="checkpoint-orb"><div className="orb-core">{checkpoint < 3 ? checkpoint + 1 : '✓'}</div>{Array.from({ length: 3 }, (_, i) => <i className={i < checkpoint ? 'lit' : ''} key={i} />)}</div><div className="checkpoint-card"><span>COMPATIBILITY CHECK · DEFINITELY SCIENTIFIC</span>{checkpoint < questions.length ? <><h2>{questions[checkpoint].q}</h2><div>{questions[checkpoint].a.map((item) => <button key={item} onClick={() => answer(item)}>{item}</button>)}</div></> : <><h2>Result: suspiciously adorable.</h2><p>No red flags detected. Bas thoda overthinking aur bohot saara pyaar.</p><button className="world-button" onClick={() => setStage(3)}>Unlock the hidden constellation <Icon name="arrow" /></button></>}<blockquote>{reaction}</blockquote></div></section>}
+    {stage === 3 && <section className="constellation-stage"><div className="sky-instruction"><span>CONNECT WHAT WAS ALWAYS THERE</span><h2>Tap the stars in your orbit.</h2><p>{stars.length}/5 aligned · destiny dramatic mode mein hai…</p></div><svg className="constellation-lines expanded" viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="15,68 32,28 50,58 68,25 84,66" /></svg>{[[15,68],[32,28],[50,58],[68,25],[84,66]].map((pos, i) => <button aria-label={`Star ${i + 1}`} key={i} className={`big-star ${stars.includes(i) ? 'lit' : ''}`} style={{ left: `${pos[0]}%`, top: `${pos[1]}%` }} onClick={() => !stars.includes(i) && setStars([...stars, i])}>✦<small>{stars.includes(i) ? ['hello', 'late nights', 'that smile', 'the butterflies', 'this moment'][i] : i + 1}</small></button>)}{stars.length === 5 && <button className="world-button floating-next" onClick={() => setStage(4)}>Follow the constellation <Icon name="spark" /></button>}</section>}
+    {stage === 4 && <section className="proposal-chamber scene-panel"><div className="nervous-orbit">{['what if I fumble?','act casual bro','heartbeat too loud'].map((thought, i) => <button className={nerves.includes(i) ? 'popped' : ''} onClick={() => !nerves.includes(i) && setNerves([...nerves, i])} key={thought} style={{ '--n': i } as React.CSSProperties}>{thought}</button>)}<div className={`proposal-heart ${nerves.length === 3 ? 'steady' : ''}`}><Icon name="heart" size={60} /><span>{nerves.length === 3 ? 'ready' : `${3 - nerves.length} nervous thoughts`}</span></div></div><div className={`proposal-card expanded-proposal ${nerves.length === 3 ? 'visible' : ''}`}><span>{gift.from.toUpperCase()} HAS STOPPED PRETENDING TO BE CHILL</span><h2>{gift.extras.question}</h2><p>Take your time. But also the “no” button has hired a lawyer.</p><div><button className="yes-button" onClick={() => setStage(5)}>{gift.extras.yesLabel || 'Yes, obviously'}</button><button className="no-button" style={{ transform: `translate(${noPos.x}px, ${noPos.y}px)` }} onMouseEnter={dodge} onClick={dodge}>Let me act expensive</button></div></div></section>}
+  </main>
+}
+
+export function ChocolateExperience({ gift }: { gift: Gift }) {
+  const [stage, setStage] = useState(initialStage)
+  const [temperature, setTemperature] = useState(30)
+  const [stirs, setStirs] = useState(0)
+  const [mould, setMould] = useState('')
+  const [toppings, setToppings] = useState<string[]>([])
+  const [opened, setOpened] = useState<number[]>([])
+  const flavours = ['softie detected', 'high cocoa, higher standards', 'chaos but cute', 'certified snack thief', 'sweet with plot twists', 'secret centre']
+  const tempered = temperature >= 47 && temperature <= 56 && stirs >= 6
+
+  if (stage === 5) return <Finale gift={gift} badge="GOLDEN TICKET · FULLY EDIBLE FEELINGS" title={<>Sweetness report:<br /><em>{gift.to} wins the whole box.</em></>}><p>{gift.extras.reward}</p><blockquote>“{gift.extras.tease}”</blockquote><p className="finale-hinglish">Sharing optional hai. Mere saath share karna morally correct hai, bas keh raha hoon.</p></Finale>
+
+  return <main className="chocolate-world expanded-world"><StageTop label="THE SWEET HEIST" step={stage} total={5} />
+    {stage === 1 && <section className="experience-intro chocolate-intro"><div className="choco-logo"><span>THE</span><b>SWEET<br />HEIST</b><small>for {gift.to}</small></div><h1>We’re making a chocolate<br /><em>with your exact energy.</em></h1><p>Flavour file: {gift.extras.flavour}. Warning: tasting may cause smiling at the screen.</p><button className="world-button" onClick={() => setStage(2)}>Enter the secret kitchen <Icon name="arrow" /></button></section>}
+    {stage === 2 && <section className="temper-lab scene-panel"><div className="chocolate-cauldron" style={{ '--stir': `${stirs * 36}deg`, '--heat': temperature / 100 } as React.CSSProperties}><div className="chocolate-liquid"><i /><i /><i /></div><button onClick={() => setStirs((value) => Math.min(10, value + 1))}><span>↻</span> STIR</button></div><div className="temper-controls"><span>CHOCOLATE PHYSICS · BUT ROMANTIC</span><h2>Temper the drama.</h2><p>Temperature sweet spot mein lao, then stir six times. Bilkul relationship jaisa: warmth + effort.</p><label><b>{temperature}°</b><input type="range" min="20" max="80" value={temperature} onChange={(event) => setTemperature(Number(event.target.value))} /><span><i style={{ left: '45%' }} />sweet spot 47–56°</span></label><div className="stir-count">{Array.from({ length: 6 }, (_, i) => <i className={i < stirs ? 'done' : ''} key={i} />)}<small>{stirs < 6 ? `${6 - stirs} stirs बाकी` : 'smooth enough to flirt'}</small></div>{tempered && <button className="world-button" onClick={() => setStage(3)}>Pour the good stuff <Icon name="spark" /></button>}</div></section>}
+    {stage === 3 && <section className="choco-atelier scene-panel"><div className={`choco-mould mould-${mould || 'blank'}`}><div>{Array.from({ length: 6 }, (_, i) => <i key={i}>{mould === 'heart' ? '♥' : mould === 'moon' ? '◐' : mould === 'chaos' ? ['★','♥','?','✦','☺','!'][i] : ''}</i>)}</div>{toppings.map((item, i) => <span key={item} style={{ '--i': i } as React.CSSProperties}>{item === 'crunch' ? '◆' : item === 'berries' ? '●' : '✦'}</span>)}</div><div className="atelier-controls"><span>DESIGN THE BITE</span><h2>Pick a shape. Add personality.</h2><label>MOULD ENERGY</label><div className="mould-options">{['heart','moon','chaos'].map((item) => <button className={mould === item ? 'selected' : ''} onClick={() => setMould(item)} key={item}>{item}</button>)}</div><label>CHOOSE ANY TWO TOPPINGS</label><div className="topping-options">{['crunch','berries','sparkle'].map((item) => <button className={toppings.includes(item) ? 'selected' : ''} onClick={() => setToppings((items) => items.includes(item) ? items.filter((value) => value !== item) : items.length < 2 ? [...items, item] : items)} key={item}>{item}</button>)}</div><p>{mould && toppings.length === 2 ? `Chef’s note: ${gift.to} has elite taste. Annoying, but true.` : 'The chocolate is judging your indecision respectfully.'}</p>{mould && toppings.length === 2 && <button className="world-button" onClick={() => setStage(4)}>Seal the custom box <Icon name="arrow" /></button>}</div></section>}
+    {stage === 4 && <section className="chocolate-stage expanded-box"><div className="chocolate-copy"><span>CASE FILE: {gift.to.toUpperCase()}</span><h2>Find the golden centre.</h2><p>Open any three. Har piece ke andar ek highly confidential opinion hai.</p></div><div className="chocolate-box">{flavours.map((flavour, i) => <button key={flavour} className={`chocolate-piece piece-${i} ${opened.includes(i) ? 'unwrapped' : ''}`} onClick={() => !opened.includes(i) && setOpened([...opened, i])}><span className="wrapper">{['◆','●','♥','✦','■','?'][i]}</span><span className="choco-reveal">{flavour}</span></button>)}</div><div className="taste-meter"><span>Your official taste</span><b>{opened.length < 3 ? `${3 - opened.length} more very scientific samples` : 'excellent. obviously.'}</b><i><em style={{ width: `${Math.min(opened.length / 3 * 100, 100)}%` }} /></i></div>{opened.length >= 3 && <div className="golden-ticket"><span>✦ GOLDEN TICKET ✦</span><h3>{gift.extras.reward}</h3><button onClick={() => setStage(5)}>Bite into the surprise <Icon name="arrow" size={17} /></button></div>}</section>}
+  </main>
+}
+
+function TeddyCharacter({ mood, accessory, hug = 0, speaking = false }: { mood: string; accessory: string; hug?: number; speaking?: boolean }) {
+  return <div className={`big-teddy teddy-${mood} accessory-${accessory || 'none'} ${hug >= 100 ? 'fully-hugged' : ''} ${speaking ? 'speaking' : ''}`}><i className="ear left" /><i className="ear right" /><div className="teddy-head"><i className="eye left" /><i className="eye right" /><b>ᴗ</b><span className="teddy-accessory">{accessory === 'bow' ? ' bow ' : accessory === 'hoodie' ? 'hoodie' : accessory === 'glasses' ? '⌐■-■' : ''}</span></div><div className="teddy-body"><span>comfort<br /><strong>department</strong></span></div><i className="teddy-paw left" /><i className="teddy-paw right" /></div>
+}
+
+export function TeddyExperience({ gift }: { gift: Gift }) {
+  const [stage, setStage] = useState(initialStage)
+  const [mood, setMood] = useState('soft')
+  const [accessory, setAccessory] = useState('')
+  const [patch, setPatch] = useState('')
+  const [actions, setActions] = useState<string[]>([])
+  const [speech, setSpeech] = useState('Hello. Main emotional support mein fresher hoon.')
+  const [hug, setHug] = useState(0)
+  const hold = useHoldProgress(setHug, 2, 34)
+  const react = (action: string) => {
+    if (!actions.includes(action)) setActions([...actions, action])
+    setSpeech({ boop: 'Nose boop registered. Ab legally tum meri favourite ho.', tickle: 'HAHA— dignity gayi, friendship pakki.', secret: `Secret mode: ${gift.from} talks about you like you invented happiness.` }[action] || '')
+  }
+
+  if (stage === 5) return <Finale gift={gift} badge="COMFORT CREATURE · BONDED FOR LIFE" title={<>Emergency softness<br /><em>successfully activated.</em></>}><p>{gift.extras.comfort}</p><blockquote>{gift.extras.teddyName} comes with {gift.extras.trait}, {patch}, no expiry, and hugs from {gift.from}.</blockquote><p className="finale-hinglish">Bad day ho toh is page pe wapas aa jaana. Teddy attendance nahi lagata.</p></Finale>
+
+  return <main className="teddy-world expanded-world"><StageTop label="BUILD-A-BAE LAB" step={stage} total={5} />
+    {stage === 1 && <section className="experience-intro teddy-intro"><div className="lab-tag">SOFTNESS LAB · UNIT 10</div><h1>A tiny comfort employee<br /><em>is waiting to meet you.</em></h1><p>{gift.from} placed a custom order for {gift.to}. Priority shipping because apparently you’re “very precious.”</p><button className="world-button" onClick={() => setStage(2)}>Open the cuddle lab <Icon name="arrow" /></button><div className="teddy-parts"><i>●</i><i>⌒</i><i>♡</i></div></section>}
+    {stage === 2 && <section className="teddy-builder scene-panel"><div className="teddy-pedestal"><TeddyCharacter mood={mood} accessory={accessory} /><span>{gift.extras.teddyName || 'Golu 2.0'}</span></div><div className="builder-controls"><span>PERSONALITY ASSEMBLY · NO BATTERIES</span><h2>Build their cuddle specialist.</h2><label>FACE ENERGY</label><div className="mood-options">{[['soft','softie'],['cool','too cool'],['chaos','chaos baby']].map(([key,label]) => <button className={mood === key ? 'chosen' : ''} onClick={() => setMood(key)} key={key}>{label}</button>)}</div><label>ACCESSORY WITH UNNECESSARY ATTITUDE</label><div className="mood-options">{['bow','hoodie','glasses'].map((item) => <button className={accessory === item ? 'chosen' : ''} onClick={() => setAccessory(item)} key={item}>{item}</button>)}</div><label>HEART PATCH</label><div className="patch-options">{['overthink shield','professional listener','snack guardian'].map((item) => <button className={patch === item ? 'chosen' : ''} onClick={() => setPatch(item)} key={item}>♥ {item}</button>)}</div>{accessory && patch && <button className="world-button" onClick={() => setStage(3)}>Wake up {gift.extras.teddyName || 'the teddy'} <Icon name="spark" /></button>}</div></section>}
+    {stage === 3 && <section className="teddy-playroom scene-panel"><div className="teddy-chat"><div className="teddy-speech">{speech}</div><TeddyCharacter mood={mood} accessory={accessory} speaking={actions.length > 0} /></div><div className="play-controls"><span>SOCIALISATION TEST</span><h2>Teach the teddy your love language.</h2><p>Try all three. It has opinions. Bohot saare.</p><div>{[['boop','Boop the nose'],['tickle','Emergency tickle'],['secret','Ask for a secret']].map(([key,label]) => <button className={actions.includes(key) ? 'done' : ''} onClick={() => react(key)} key={key}><i>{actions.includes(key) ? '✓' : '+'}</i>{label}</button>)}</div>{actions.length === 3 && <button className="world-button" onClick={() => setStage(4)}>Run the final hug test <Icon name="heart" /></button>}</div></section>}
+    {stage === 4 && <section className="teddy-hug-stage scene-panel"><div className="teddy-panel"><span>FINAL QUALITY CHECK</span><h2>Charge the cuddle core.</h2><p>Special power: <strong>{gift.extras.trait}</strong></p><div className="hug-meter"><span>HUG CHARGE</span><b>{hug}%</b><i><em style={{ width: `${hug}%` }} /></i><small>{hug < 35 ? 'Hold both paws. Sharam baad mein.' : hug < 75 ? 'A little tighter… haan, like that.' : hug < 100 ? 'Almost maximum pyaar!' : 'MAXIMUM SQUISH ACHIEVED'}</small></div>{hug >= 100 && <button className="world-button" onClick={() => setStage(5)}>Open the comfort pocket <Icon name="heart" /></button>}</div><div className="hug-teddy-wrap"><TeddyCharacter mood={mood} accessory={accessory} hug={hug} /><button className="hug-paw-zone" onPointerDown={hold.start} onPointerUp={hold.stop} onPointerLeave={hold.stop}>HOLD BOTH PAWS</button></div></section>}
+  </main>
+}
+
+export function PromiseExperience({ gift }: { gift: Gift }) {
+  const [stage, setStage] = useState(initialStage)
+  const [scan, setScan] = useState(0)
+  const [verdict, setVerdict] = useState('Scanner online. Cringe filter: ruthless.')
+  const [lit, setLit] = useState<number[]>([])
+  const [seal, setSeal] = useState(0)
+  const hold = useHoldProgress(setSeal, 2, 34)
+  const cards = [
+    'I promise to reply in 0.4 seconds, even during shampoo.',
+    'I promise to say what I feel, even when it comes out clumsy.',
+    'I promise I will never steal your fries. Ever.',
+    gift.extras.promise1,
+  ]
+  const promises = [gift.extras.promise1, gift.extras.promise2, gift.extras.promise3]
+  const judge = (keep: boolean) => {
+    const responses = [
+      keep ? 'Rejected by reality. Shampoo has entered the chat.' : 'Correct. Unrealistic SLA detected.',
+      keep ? 'Approved. Honest > perfectly worded.' : 'Scanner disagrees. Vulnerability is actually hot.',
+      keep ? 'Liar detected. Fries require a separate treaty.' : 'Correct. Protect yourself legally.',
+      keep ? 'Approved. Creator-provided, dil-certified.' : 'Ouch. Personal promise ko reject kar diya? Bold.',
+    ]
+    setVerdict(responses[scan])
+    setScan((value) => value + 1)
+  }
+
+  if (stage === 5) return <Finale gift={gift} badge="PINKY-SEALED · CRINGE-SCANNED · REAL" title={<>Not perfect promises.<br /><em>Present ones.</em></>}><p>Big dramatic claims nahi. Bas the kind of choosing that happens again and again.</p><blockquote>Sealed by {gift.to} + {gift.from}, somewhere on the internet ✦</blockquote><p className="finale-hinglish">Terms apply: sulking allowed, disappearing without “reached?” text not allowed.</p></Finale>
+
+  return <main className="promise-world expanded-world"><div className="promise-stars" /><StageTop label="THE PINKY PROTOCOL" step={stage} total={5} />
+    {stage === 1 && <section className="experience-intro promise-intro"><span className="kicker">WORDS THAT PLAN TO SHOW UP</span><h1>Promises, but without<br /><em>the copy-paste filmy nonsense.</em></h1><p>{gift.from} left three real ones here. First, our scanner must remove unrealistic boyfriend-girlfriend propaganda.</p><button className="world-button" onClick={() => setStage(2)}>Activate the cringe scanner <Icon name="spark" /></button></section>}
+    {stage === 2 && <section className="promise-scanner scene-panel"><div className="scanner-machine"><div className="scanner-beam" /><span>TRUTH-O-METER</span><b>{scan < cards.length ? `${Math.round(scan / cards.length * 100)}%` : '100%'}</b><i><em style={{ height: `${Math.max(12, scan / cards.length * 100)}%` }} /></i></div><div className="scanner-card"><span>REAL PROMISE OR FULL FILMY?</span>{scan < cards.length ? <><h2>“{cards[scan]}”</h2><div><button onClick={() => judge(true)}>keep it</button><button onClick={() => judge(false)}>too filmy</button></div></> : <><h2>Calibration complete.</h2><p>Result: humour intact, sincerity unlocked, trust issues respectfully acknowledged.</p><button className="world-button" onClick={() => setStage(3)}>Receive the real promises <Icon name="arrow" /></button></>}<blockquote>{verdict}</blockquote></div></section>}
+    {stage === 3 && <section className="promise-stage"><div className="promise-copy"><span>TOUCH EACH ONE TO KEEP IT</span><h2>A constellation for {gift.to}.</h2><p>Inko read nahi, receive karna hai.</p></div><div className="promise-orbit">{promises.map((promise, i) => <button className={lit.includes(i) ? 'lit' : ''} key={i} onClick={() => !lit.includes(i) && setLit([...lit, i])}><i>{i + 1}</i><p>{promise}</p><span>✦</span></button>)}<svg viewBox="0 0 100 100"><path d="M20 70 Q50 5 80 70" /></svg></div>{lit.length === 3 && <button className="world-button floating-next" onClick={() => setStage(4)}>Take them to the pinky chamber <Icon name="spark" /></button>}</section>}
+    {stage === 4 && <section className="pinky-chamber scene-panel"><div className="pinky-ritual"><div className="pinky-hands expanded"><span>☝</span><i style={{ opacity: seal / 100, transform: `scale(${.3 + seal / 100})` }} /><span>☝</span></div><h2>{seal < 100 ? 'Hold the promise steady.' : 'Pinky protocol accepted.'}</h2><p>{seal < 35 ? 'Commitment loading… no pressure, बस hold.' : seal < 75 ? 'Words are becoming weight.' : seal < 100 ? 'Almost sealed. Don’t ghost the button.' : 'Universe witnessed it. Wi-Fi bhi stable tha.'}</p><button className="seal-button" onPointerDown={hold.start} onPointerUp={hold.stop} onPointerLeave={hold.stop}><i><em style={{ width: `${seal}%` }} /></i>{seal < 100 ? 'HOLD BOTH PINKIES TOGETHER' : 'SEALED · NO BORING LEGAL FONT'}</button>{seal >= 100 && <button className="world-button" onClick={() => setStage(5)}>Open the promise vault <Icon name="heart" /></button>}</div></section>}
+  </main>
+}
+
+export function HugExperience({ gift }: { gift: Gift }) {
+  const [stage, setStage] = useState(initialStage)
+  const [notes, setNotes] = useState<number[]>([])
+  const [inhale, setInhale] = useState(false)
+  const [breaths, setBreaths] = useState(0)
+  const [warmth, setWarmth] = useState(0)
+  const hold = useHoldProgress(setWarmth, 1, 25)
+  const breathe = () => {
+    if (inhale) setBreaths((value) => Math.min(3, value + 1))
+    setInhale(!inhale)
+  }
+
+  if (stage === 5) return <Finale gift={gift} badge="DISTANCE · TEMPORARILY CANCELLED" title={<>You have been held.<br /><em>No explanation required.</em></>}><p>{gift.extras.whisper}</p><blockquote>Hug style: {gift.extras.hugStyle}. Duration: jitni der chahiye. Awkward back-pat: disabled.</blockquote><p className="finale-hinglish">Ab thoda paani piyo. Emotional scenes dehydrating hote hain.</p></Finale>
+
+  return <main className="hug-world expanded-world" style={{ '--warmth': warmth / 100 } as React.CSSProperties}><StageTop label="THE WARMTH ROOM" step={stage} total={5} />
+    {stage === 1 && <section className="experience-intro hug-intro"><span className="kicker">A ROOM THAT ASKS NOTHING FROM YOU</span><h1>You don’t have to<br /><em>be okay in here.</em></h1><p>{gift.extras.distance}</p><button className="world-button" onClick={() => setStage(2)}>Come inside, shoes optional <Icon name="arrow" /></button><div className="window-scene"><i /><i /><b /></div></section>}
+    {stage === 2 && <section className="hug-stage comfort-search"><div className="room-window"><i /><span>outside: too much<br /><strong>inside: softer</strong></span></div><div className="sofa">{['you can exhale here','no fixing, just holding','I’ve got you'].map((note, i) => <button className={notes.includes(i) ? 'found' : ''} onClick={() => setNotes([...new Set([...notes, i])])} key={note}><i /><span>{note}</span></button>)}</div><div className="room-copy"><span>THE ROOM HID THREE SOFT PLACES</span><h2>{notes.length < 3 ? `${3 - notes.length} comfort notes still tucked away.` : 'Okay. The room trusts you now.'}</h2><p>Tap the cushions. Haan, digital sofa pe bhi treasure milta hai.</p></div>{notes.length === 3 && <button className="world-button floating-next" onClick={() => setStage(3)}>Sit down for a second <Icon name="arrow" /></button>}</section>}
+    {stage === 3 && <section className="breathing-room scene-panel"><div className={`breath-orb ${inhale ? 'inhale' : ''}`}><i /><span>{inhale ? 'hold…' : breaths >= 3 ? 'softer.' : 'breathe in'}</span><b>{breaths}/3</b></div><div className="breath-copy"><span>SYNC BEFORE THE HUG</span><h2>Match the room’s breathing.</h2><p>No wellness lecture. Bas teen slow breaths so the hug lands where it needs to.</p><button onClick={breathe}>{breaths >= 3 ? 'breathing synced' : inhale ? 'now breathe out' : 'tap to breathe in'}</button>{breaths >= 3 && !inhale && <button className="world-button" onClick={() => setStage(4)}>Let the distance close <Icon name="heart" /></button>}</div></section>}
+    {stage === 4 && <section className="embrace-stage"><div className={`embrace-arm arm-left ${warmth >= 100 ? 'closed' : ''}`}><i /></div><div className={`embrace-arm arm-right ${warmth >= 100 ? 'closed' : ''}`}><i /></div><div className="warmth-control expanded"><span>DIGITAL HUG · ACTUAL INTENTION</span><h2>{warmth < 100 ? 'Hold until the arms meet.' : 'There. Don’t rush away.'}</h2><div className="warmth-ring" style={{ '--p': `${warmth * 3.6}deg` } as React.CSSProperties}><button onPointerDown={hold.start} onPointerUp={hold.stop} onPointerLeave={hold.stop}><Icon name="heart" size={34} /><span>{warmth < 100 ? 'HOLD TO HUG' : 'HELD.'}</span></button></div><p>{warmth < 100 ? `${warmth}% closer · ${warmth < 50 ? 'thoda aur' : 'bas aa gaye'}` : gift.extras.whisper}</p>{warmth >= 100 && <button className="world-button" onClick={() => setStage(5)}>Keep this warmth <Icon name="heart" /></button>}</div></section>}
+  </main>
+}
+
+export function KissExperience({ gift }: { gift: Gift }) {
+  const [stage, setStage] = useState(initialStage)
+  const [stamp, setStamp] = useState('MUAH')
+  const [power, setPower] = useState(35)
+  const [hits, setHits] = useState(0)
+  const [clouds, setClouds] = useState<number[]>([])
+  const [sent, setSent] = useState(false)
+  const targetPositions = [[24,32],[67,27],[54,68]]
+  const dispatch = () => {
+    setSent(true)
+    window.setTimeout(() => setStage(5), 2600)
+  }
+
+  if (stage === 5) return <Finale gift={gift} badge="SIGNED · SEALED · BLUSHING" title={<>Special delivery:<br /><em>right on target.</em></>}><p>{gift.extras.after}</p><blockquote>{gift.extras.kissType} delivered to “{gift.extras.destination}” with zero customs duty.</blockquote><p className="finale-hinglish">Recipient reaction may include: screen ko dekh ke stupid smile. Courier not responsible.</p></Finale>
+
+  return <main className="kiss-world expanded-world"><StageTop label="KISS COURIER · EXPRESS" step={stage} total={5} />
+    {stage === 1 && <section className="experience-intro kiss-intro"><div className="courier-stamp">FRAGILE<br /><b>♥</b><small>HANDLE WITH FEELINGS</small></div><h1>One kiss is stuck<br /><em>at romantic customs.</em></h1><p>Sender: {gift.from}. Recipient: the suspiciously cute {gift.to}. Paperwork: unnecessarily flirty.</p><button className="world-button" onClick={() => setStage(2)}>Claim the private shipment <Icon name="arrow" /></button></section>}
+    {stage === 2 && <section className="kiss-customs scene-panel"><div className="kiss-form"><span>AQUIRA EXPRESS · PRIORITY FEELINGS</span><h2>Prepare the kiss passport.</h2><label>CHOOSE A STAMP<div>{['MUAH','XO','♥','UMM…'].map((item) => <button className={stamp === item ? 'selected' : ''} onClick={() => setStamp(item)} key={item}>{item}</button>)}</div></label><label>KISS VELOCITY <input type="range" min="10" max="100" value={power} onChange={(event) => setPower(Number(event.target.value))} /><span>{power < 40 ? 'sweet & shy' : power < 75 ? 'butterfly speed' : 'dangerously filmy'}</span></label><div className="passport-details"><i>{stamp}</i><span><b>TYPE</b>{gift.extras.kissType}</span><span><b>DESTINATION</b>{gift.extras.destination}</span></div><button className="dispatch" onClick={() => setStage(3)}>STAMP & CONTINUE <Icon name="arrow" /></button></div><div className="lipstick-card"><span>OFFICIAL SAMPLE</span><div className="lip-print"><i /><i /></div><p>Quality check: cute, tasteful, and 73% likely to cause butterflies.</p></div></section>}
+    {stage === 3 && <section className="kiss-aim-stage"><div className="aim-copy"><span>CALIBRATE THE KISS</span><h2>Tap the moving heart three times.</h2><p>Aim carefully. Forehead pe jaana tha, neighbour ke Wi-Fi pe nahi.</p></div><div className="kiss-scope">{Array.from({ length: hits }, (_, i) => <i className="kiss-mark" key={i} style={{ left: `${targetPositions[i][0]}%`, top: `${targetPositions[i][1]}%` }}>MUAH</i>)}{hits < 3 && <button className="moving-heart" onClick={() => setHits((value) => value + 1)} style={{ left: `${targetPositions[hits][0]}%`, top: `${targetPositions[hits][1]}%` }}><Icon name="heart" size={28} /><span>tap me</span></button>}<div className="scope-lines" /></div>{hits >= 3 && <button className="world-button floating-next" onClick={() => setStage(4)}>Route locked · start delivery <Icon name="arrow" /></button>}</section>}
+    {stage === 4 && <section className="kiss-route-stage"><div className="route-map"><div className="city sender"><i>{gift.from.charAt(0)}</i><span>{gift.from}<small>dangerously ready</small></span></div><div className="kiss-flight-path"><b className={sent ? 'fly' : ''} style={{ '--speed': `${2.8 - power / 65}s` } as React.CSSProperties}>{stamp}</b>{[0,1,2].map((cloud) => <button className={clouds.includes(cloud) ? 'cleared' : ''} onClick={() => !clouds.includes(cloud) && setClouds([...clouds, cloud])} key={cloud} style={{ '--c': cloud } as React.CSSProperties}>☁<span>{['overthinking cloud','log kya kahenge zone','bad network'][cloud]}</span></button>)}</div><div className="city receiver"><i>{gift.to.charAt(0)}</i><span>{gift.to}<small>{gift.extras.destination}</small></span></div></div><div className="route-status"><span>CLEAR THE THREE DELIVERY OBSTACLES</span><h2>{clouds.length < 3 ? `${3 - clouds.length} interruptions between you and the “mwah.”` : 'Airspace clear. Feelings have priority.'}</h2>{clouds.length === 3 && <button className="world-button" disabled={sent} onClick={dispatch}>{sent ? 'KISS IN FLIGHT…' : 'Dispatch immediately'} <Icon name="heart" /></button>}</div></section>}
+  </main>
+}
+
+export function ValentineExperience({ gift }: { gift: Gift }) {
+  const [stage, setStage] = useState(initialStage)
+  const [rooms, setRooms] = useState<number[]>([])
+  const [reel, setReel] = useState(0)
+  const [pieces, setPieces] = useState<number[]>([])
+  const stories = [
+    { label: 'THEN', title: 'Where it quietly began', text: gift.extras.memory },
+    { label: 'NOW', title: 'Why the ordinary glows', text: gift.extras.reason },
+    { label: 'NEXT', title: 'A future worth leaning into', text: gift.extras.future },
+  ]
+  const reelText = reel < 25 ? 'The “who is this person?” era.' : reel < 55 ? 'The “why am I smiling at my phone?” incident.' : reel < 85 ? 'The comfortable silence plot twist.' : 'The part where ordinary life started feeling like ours.'
+
+  if (stage === 5) return <Finale gift={gift} badge="THE CENTREPIECE · ALWAYS WAS YOU" title={<>My favourite place<br /><em>is wherever “us” is.</em></>}><p>{gift.message}</p><blockquote>Happy Valentine’s Day, {gift.to}. Today, tomorrow, and on all the deeply normal days in between.</blockquote><p className="finale-hinglish">Museum closes never. Entry fee: one honest smile and maybe a hug pending offline.</p></Finale>
+
+  return <main className="valentine-world expanded-world"><StageTop label="THE US MUSEUM" step={stage} total={5} />
+    {stage === 1 && <section className="experience-intro valentine-intro"><span className="museum-ticket">ADMIT ONE · {gift.to.toUpperCase()} · FOREVER VALID</span><h1>Tonight, “us” has<br /><em>its own impossible museum.</em></h1><p>Memories move here. Futures leave voice notes. Please keep your heart inside the experience at all times.</p><button className="world-button" onClick={() => setStage(2)}>Enter after hours <Icon name="arrow" /></button><div className="museum-arches"><i /><i /><i /></div></section>}
+    {stage === 2 && <section className="museum-stage"><div className="museum-heading"><span>PRIVATE COLLECTION · CURATED BY {gift.from.toUpperCase()}</span><h2>Three rooms. One timeline.</h2><p>Open each door. Nothing here was mass-produced.</p></div><div className="museum-rooms">{stories.map((story, i) => <button className={rooms.includes(i) ? 'open' : ''} onClick={() => setRooms([...new Set([...rooms, i])])} key={story.label}><span className="room-number">0{i + 1}</span><div className="room-door"><i /><b>{story.label}</b></div><article><span>{story.label}</span><h3>{story.title}</h3><p>{story.text}</p></article></button>)}</div>{rooms.length === 3 && <button className="world-button floating-next" onClick={() => setStage(3)}>The projection room just opened <Icon name="spark" /></button>}</section>}
+    {stage === 3 && <section className="projection-room scene-panel"><div className="film-projector"><div className="projector-lens"><i /></div><div className="film-beam" /><span>OUR VERY UNOFFICIAL DOCUMENTARY</span></div><div className="memory-screen"><div className="film-grain" /><div className="film-frames">{['first look','long talks','inside joke','comfortable us'].map((item, i) => <i className={reel >= i * 26 ? 'visible' : ''} key={item}>{item}</i>)}</div><blockquote>{reelText}</blockquote><small>{gift.to} + {gift.from} · a film still in production</small></div><div className="reel-control"><span>DRAG THROUGH THE TIMELINE</span><input type="range" min="0" max="100" value={reel} onChange={(event) => setReel(Number(event.target.value))} /><b>{reel}% watched</b>{reel >= 95 && <button className="world-button" onClick={() => setStage(4)}>Find the missing centrepiece <Icon name="arrow" /></button>}</div></section>}
+    {stage === 4 && <section className="heart-archive scene-panel"><div className="archive-copy"><span>FINAL EXHIBIT · ASSEMBLY REQUIRED</span><h2>The heart arrived in pieces.</h2><p>Not broken. Bas har piece ek alag reason carry kar raha hai. Tap to bring them home.</p><div className="heart-reasons">{['the laughs','the safety','the chaos','the choosing'].map((item, i) => <button className={pieces.includes(i) ? 'placed' : ''} onClick={() => !pieces.includes(i) && setPieces([...pieces, i])} key={item}><i>{i + 1}</i>{item}</button>)}</div>{pieces.length === 4 && <button className="world-button" onClick={() => setStage(5)}>Reveal the centrepiece <Icon name="heart" /></button>}</div><div className={`archive-heart pieces-${pieces.length}`}>{[0,1,2,3].map((piece) => <i className={pieces.includes(piece) ? 'placed' : ''} key={piece} style={{ '--p': piece } as React.CSSProperties}><Icon name="heart" size={90} /></i>)}<span>{pieces.length === 4 ? gift.to : `${4 - pieces.length} pieces missing`}</span></div></section>}
+  </main>
+}
